@@ -1,0 +1,82 @@
+#!/usr/bin/env python
+
+
+# -------
+# Imports
+# -------
+
+import csv
+import os
+
+import h5py
+
+import numpy as np
+
+from argparse import ArgumentParser
+
+
+# ----
+# Main
+# ----
+
+if __name__ == "__main__":
+    # Command-line arguments.
+    
+    parser = ArgumentParser(
+        description = "Get k_latt(T) from Phono3py kappa-*.hdf5 files and save to CSV"
+        )
+    
+    parser.add_argument(
+        metavar = "<input_file>",
+        nargs = '+', dest = 'input_files',
+        help = "Phono3py kappa-*.hdf5 files to read"
+        )
+    
+    args = parser.parse_args()
+    
+    # Loop over input files.
+    
+    for input_file in args.input_files:
+        # Read input file.
+        
+        t_arr, k_arr = None, None
+        
+        with h5py.File(input_file, 'r') as f:
+            t_arr = f['temperature'][:]
+            k_arr = f['kappa'][:]
+
+        # Prepare output data.
+
+        header_row = [
+            "T [K]",
+            "k_xx [W/m.K]", "k_yy [W/m.K]", "k_zz [W/m.K]",
+            "k_yz [W/m.K]", "k_xz [W/m.K]", "k_xy [W/m.K]",
+            "k_iso [W/m.K]"
+            ]
+        
+        data_rows = []
+        
+        for t, k in zip(t_arr, k_arr):
+            k_iso = np.mean(k[:3])
+            
+            data_rows.append(
+                [t] + [k_ab for k_ab in k] + [k_iso]
+                )
+        
+        # Generate an output file name based on the input file:
+        #   kappa-m*.hdf5 --> kappa-m*.csv
+        
+        _, tail = os.path.split(input_file)
+        root, _ = os.path.splitext(tail)
+        
+        output_file = r"{0}.csv".format(root)
+        
+        # Write output file.
+        
+        with open(output_file, 'wb') as output_writer:
+            output_writer_csv = csv.writer(output_writer)
+            
+            output_writer_csv.writerow(header_row)
+            
+            for data_row in data_rows:
+                output_writer_csv.writerow(data_row)

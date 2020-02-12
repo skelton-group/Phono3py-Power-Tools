@@ -1,0 +1,182 @@
+#!/usr/bin/env python
+
+
+# -------
+# Imports
+# -------
+
+import math
+
+from argparse import ArgumentParser
+
+# If Phonopy is not installed, intercept the ImportError with a clearer error message.
+
+try:
+    from phonopy.structure import atoms
+except ImportError:
+    raise Exception("Error: This script requires Phonopy to be installed.")
+
+
+# ---------
+# Constants
+# ---------
+
+""" Threshold for considering a value equal to zero. """
+
+ZeroTolerance = 1.0e-5
+
+
+# ---------
+# Functions
+# ---------
+
+def ParseFracVal(val):
+    """ Parses fractional values entered as strings of the form 'X/Y'. """
+    
+    if '/' in val:
+        # Assume val is a fraction.
+        
+        num, denom = val.split('/')
+        
+        return float(num) / float(denom)
+    else:
+        # Assume val is a float.
+        
+        return float(val)
+
+
+# ----
+# Main
+# ----
+
+if __name__ == "__main__":
+    # Command-line arguments.
+    
+    parser = ArgumentParser(
+        description = "Generate Phono3py input for modelling isotope effects or alloying"
+        )
+    
+    parser.add_argument(
+        metavar = "<symbol>",
+        nargs = '+', dest="AtomicSymbols",
+        help = "List of atomic symbols"
+        )
+    
+    parser.add_argument(
+        '--site-average',
+        action = 'store_true', dest = 'SiteAverage',
+        help = "Output average mass and mass variance for mixed-atom site"
+        )
+    
+    parser.add_argument(
+        '--site-occupation',
+        metavar = "<occ>",
+        dest = 'SiteOccupations',
+        help = "Occupation fractions for a mixed-atom site (fractional values e.g. 1/3 accepted)"
+        )
+    
+    args = parser.parse_args()
+    
+    # Convert atomic symbols to title case.
+    
+    atomic_symbols = [
+        symbol.strip().title() for symbol in args.AtomicSymbols
+        ]
+    
+    # Check Phonopy database has isotope data for all atom types.
+    
+    for symbol in atomic_symbols:
+        if symbol not in atoms.isotope_data:
+            raise Exception("Error: No isotope data for '{0}' in Phonopy database.".format(symbol))
+    
+    # Build a list of (site_name, [ ( a_i, m_i ), ... ]) tuples.
+    
+    site_comps = []
+    
+    if args.SiteAverage:
+        # Single site with fractional occupations.
+        
+        if args.SiteOccupations is None:
+            raise Exception("Error: --site-occupation must be set if the --site-average option is used.")
+        
+        occ_fracs = [
+            ParseFracVal(val) for val in args.SiteOccupations.strip().split()
+            ]
+        
+        # Sanity checks.
+        
+        if len(occ_fracs) != len(atomic_symbols):
+            raise Exception("Error: Number of site occupations is inconsistent with the number of atomic symbols.")
+        
+        for frac in occ_fracs:
+            if frac < 0.0:
+                raise Exception("Error: Site occupations cannot be negative.")
+        
+        occ_frac_sum = sum(occ_fracs)
+        
+        if math.fabs(1.0 - occ_frac_sum) > ZeroTolerance:
+            print("WARNING: sum(SiteOccupations) = {0:.4f} != 1.0".format(occ_frac_sum))
+            print("")
+        
+        # Add isotope data for each atom at the mixed site, weighted by the site occupancy.
+        
+        site_iso = []
+        
+        for symbol, occ_frac in zip(atomic_symbols, occ_fracs):
+            for _, m_i, a_i in atoms.isotope_data[symbol]:
+                site_iso.append(
+                    (occ_frac * a_i, m_i)
+                    )
+        
+        site_comps.append(
+            ('Mixed', site_iso)
+            )
+    
+    else:
+        for symbol in atomic_symbols:
+            site_comp = [(a_i, m_i) for _, m_i, a_i in atoms.isotope_data[symbol]]
+
+            site_comps.append(
+                (symbol, site_comp)
+                )
+    
+    # Loop over sites and calculate, collect, and print out average mass and mass variance.
+    
+    m_aves = []
+    m_vars = []
+    
+    for site_label, site_comp in site_comps:
+        site_a_i = [a_i for a_i, _ in site_comp]
+        site_m_i = [m_i for _, m_i in site_comp]
+        
+        m_ave = sum(
+            a_i * m_i for a_i, m_i in site_comp
+            )
+    
+        m_var = sum(
+            a_i * (1.0 - (m_i / m_ave)) ** 2
+                for a_i, m_i in site_comp
+            )
+        
+        header = "Site: {0}".format(site_label)
+        
+        print(header)
+        print('-' * len(header))
+        
+        print("m_ave = {0:.5f}".format(m_ave))
+        print("m_var = {0:.5e}".format(m_var))
+        
+        print("")
+        
+        m_aves.append(m_ave)
+        m_vars.append(m_var)
+    
+    # Use collected averages/variances to generate Phono3py input tags.
+    
+    print("To input this data into Phono3py, use:")
+    
+    m_ave_str = " ".join("{0:.5f}".format(m_ave) for m_ave in m_aves)
+    m_var_str = " ".join("{0:.5e}".format(m_var) for m_var in m_vars)
+    
+    print("  --mass=\"{0}\"".format(m_ave_str))
+    print("  --mass-variance=\"{0}\"".format(m_var_str))
