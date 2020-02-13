@@ -31,7 +31,7 @@ Alternatively, code can be installed by adding the root folder of the repository
 `PhonopyImporter` uses the Phonopy Python API, so Phonopy must be installed to use it, and also requires `NumPy`.
 
 
-## Code Support
+## Code support
 
 ### CASTEP
 
@@ -61,7 +61,7 @@ For example, to convert a &Gamma;-point CASTEP calculation output into "castep.p
 ```
 
 
-## Bugs and Feature Requests
+## Bugs and feature requests
 
 At the time of writing, this code has only been tested for &Gamma;-point calculations in CASTEP.
 If you encounter bugs while using this code, please let us know - it will speed up the process a lot if you can provide a detailed description of the problem and input file(s) that reproduce the error.
