@@ -1,0 +1,69 @@
+#!/bin/env python
+
+
+# -------
+# Imports
+# -------
+
+from argparse import ArgumentParser
+
+from PhonopyImporter.CASTEP import ReadPhonon
+from PhonopyImporter.Common import WritePOSCAR, BuildForceConstants
+
+
+# ----
+# Main
+# ----
+
+if __name__ == "__main__":
+    # Parse command-line args.
+    
+    parser = ArgumentParser(description = "Convert a CASTEP .phonon file to a POSCAR and FORCE_CONSTANTS file for post-processing in Phonopy")
+    
+    parser.add_argument(
+        "-s", "--seedname",
+        metavar = "<seedname>",
+        dest = "SeedName", type = str, required = True,
+        help = "CASTEP .phonon file <seedname>.phonon (e.g. --seedname=\"castep\")"
+        )
+    
+    parser.add_argument(
+        "-d", "--dim",
+        metavar = "<dim_1 dim_2 dim_3>",
+        dest = "SupercellMatrix", type = str, required = True,
+        help = "Equivalent supercell expansion [dim_1, dim_2, dim_3] for building force constants (e.g. --dim=\"1 1 1\")"
+        )
+    
+    args = parser.parse_args()
+    
+    dim_1, dim_2, dim_3 = [
+        int(dim) for dim in args.SupercellMatrix.split()
+        ]
+    
+    # Read CASTEP .phonon file.
+    
+    params, structure_data, q_point_data = ReadPhonon(
+        "{0}.phonon".format(args.SeedName)
+        )
+        
+    # Write structure to a VASP POSCAR file.
+    
+    v_latt, atom_pos, atom_types, atom_mass = structure_data    
+    
+    WritePOSCAR(
+        v_latt, atom_types, atom_pos, structure_name = args.SeedName
+        )
+
+    # q_point_data is a list of (q_pt, q_wt, freqs, ir_ints, eigenvectors) tuples.
+    
+    assert params['freq_units'] == 'cm-1'
+    
+    q_pts = [q for q, _, _, _, _ in q_point_data]
+    freqs = [freqs for _, _, freqs, _, _ in q_point_data]
+    eigs = [eigs for _, _, _, _, eigs in q_point_data]
+    
+    # Build force constants.
+    
+    BuildForceConstants(
+        v_latt, atom_types, atom_pos, q_pts, freqs, eigs, (dim_1, dim_2, dim_3), freq_units = 'inv_cm', atom_mass = atom_mass
+        )
