@@ -62,7 +62,7 @@ if __name__ == "__main__":
         )
     
     parser.add_argument(
-        metavar = "<atomic_symbols>",
+        metavar = "<symbol>",
         nargs = '+', dest="AtomicSymbols",
         help = "List of atomic symbols - if --site-average is set, sites should be separated with commas"
         )
