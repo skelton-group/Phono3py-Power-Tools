@@ -62,9 +62,9 @@ if __name__ == "__main__":
         )
     
     parser.add_argument(
-        metavar = "<symbol>",
-        nargs = '+', dest="AtomicSymbols",
-        help = "List of atomic symbols - if --site-average is set, sites should be separated with commas"
+        metavar = "<symbol_or_mass>",
+        nargs = '+', dest="SiteAtomsList",
+        help = "List of atomic symbols or masses - if --site-average is set, sites should be separated with commas"
         )
     
     parser.add_argument(
@@ -82,97 +82,116 @@ if __name__ == "__main__":
     
     args = parser.parse_args()
     
-    # Process list of atomic symbols.
+    # Process list of atomic symbols/masses.
 
-    atomic_symbols_str = " ".join(args.AtomicSymbols)
+    site_atoms_str = " ".join(args.SiteAtomsList)
     
-    site_atomic_symbols = None
+    site_atoms_sets = None
     
     if args.SiteAverage:
-        site_atomic_symbols = []
+        site_atoms_sets = []
         
-        for atomic_symbols in atomic_symbols_str.split(','):
-            site_atomic_symbols.append(
-                [symbol.strip().title() for symbol in atomic_symbols.split()]
+        for sym_or_mass_list in site_atoms_str.split(','):
+            site_atoms_sets.append(
+                [sym_or_mass for sym_or_mass in sym_or_mass_list.split()]
                 )
     
     else:
-        if ',' in atomic_symbols_str:
+        if ',' in site_atoms_str:
             raise Exception("Error: --site-average must be set to input comma-separated lists of atomic symbols.")
         
-        site_atomic_symbols = [
-            [symbol.strip().title()] for symbol in atomic_symbols_str.split()
+        site_atoms_sets = [
+            [sym_or_mass] for sym_or_mass in site_atoms_str.split()
             ]
     
-    # Check Phonopy database has isotope data for all atom types.
+    for site_atoms_set in site_atoms_sets:
+        for i, sym_or_mass in enumerate(site_atoms_set):
+            try:
+                sym_or_mass = float(sym_or_mass)
+            except ValueError:
+                sym_or_mass = sym_or_mass.title()
+            
+            site_atoms_set[i] = sym_or_mass
     
-    for atomic_symbols in site_atomic_symbols:
-        for symbol in atomic_symbols:
-            if symbol not in atoms.isotope_data:
-                raise Exception("Error: No isotope data for '{0}' in Phonopy database.".format(symbol))
+    # Check Phonopy database has isotope data for atomic symbols (if input).
+    
+    for site_atoms_set in site_atoms_sets:
+        for sym_or_mass in site_atoms_set:
+            if not isinstance(sym_or_mass, float) and sym_or_mass not in atoms.isotope_data:
+                raise Exception("Error: No isotope data for '{0}' in Phonopy database.".format(sym_or_mass))
     
     # Process site occupations.
     
-    site_occ_fracs = None
+    site_occ_fracs_sets = None
     
     if args.SiteAverage:
         if args.SiteOccupations is None:
             raise Exception("Error: --site-occupation must be set if the --site-average option is used.")
         
-        site_occ_fracs = []
+        site_occ_fracs_sets = []
         
-        for occ_fracs in args.SiteOccupations.split(','):
-            site_occ_fracs.append(
-                [ParseFracVal(val) for val in occ_fracs.split()]
+        for occ_fracs_list in args.SiteOccupations.split(','):
+            site_occ_fracs_sets.append(
+                [ParseFracVal(val) for val in occ_fracs_list.split()]
                 )
         
         # Sanity checks.
         
         site_occ_input_error = False
         
-        if len(site_occ_fracs) != len(site_atomic_symbols):
+        if len(site_occ_fracs_sets) != len(site_atoms_sets):
             site_occ_input_error = True
         
         else:
-            for atomic_symbols, occ_fracs in zip(site_atomic_symbols, site_occ_fracs):
-                if len(atomic_symbols) != len(occ_fracs):
+            for site_atoms_set, site_occ_fracs_set in zip(site_atoms_sets, site_occ_fracs_sets):
+                if len(site_atoms_set) != len(site_occ_fracs_set):
                     site_occ_input_error = True
         
         if site_occ_input_error:
             raise Exception("Error: The site atom configuration is inconsistent with the supplied occupation fractions.")
         
-        for occ_fracs in site_occ_fracs:
-            for frac in occ_fracs:
-                if frac < 0.0:
+        for i, site_occ_fracs_set in enumerate(site_occ_fracs_sets):
+            for occ_frac in site_occ_fracs_set:
+                if occ_frac < 0.0:
                     raise Exception("Error: Site occupations cannot be negative.")
 
-            occ_frac_sum = sum(occ_fracs)
+            site_occ_fracs_sum = sum(site_occ_fracs_set)
             
-            if math.fabs(1.0 - occ_frac_sum) > ZeroTolerance:
-                print("WARNING: sum(SiteOccupations) = {0:.4f} != 1.0".format(occ_frac_sum))
+            if math.fabs(1.0 - site_occ_fracs_sum) > ZeroTolerance:
+                print("WARNING: Site {0}: sum(SiteOccupations) = {1:.4f} != 1.0".format(i + 1, site_occ_fracs_sum))
                 print("")
     
     else:
-        site_occ_fracs = [[1.0]] * len(site_atomic_symbols)
+        site_occ_fracs_sets = [[1.0]] * len(site_atoms_sets)
     
     # Build a list of (site_name, [ ( a_i, m_i ), ... ]) tuples.
     
     site_comps = []
 
-    for site_index, (atomic_symbols, occ_fracs) in ezip(site_atomic_symbols, site_occ_fracs):
+    for site_index, (site_atoms_set, site_occ_fracs_set) in ezip(site_atoms_sets, site_occ_fracs_sets):
         # Add isotope data for each atom at the mixed site, weighted by the site occupancy.
         
+        site_atoms_labels = [
+            sym_or_mass if not isinstance(sym_or_mass, float) else '?'
+                for sym_or_mass in site_atoms_set
+            ]
+        
         site_name = "Site {0} ({1})".format(
-            site_index + 1, ", ".join(atomic_symbols)
+            site_index + 1, ", ".join(site_atoms_labels)
             )
         
         site_iso = []
         
-        for symbol, occ_frac in zip(atomic_symbols, occ_fracs):
-            for _, m_i, a_i in atoms.isotope_data[symbol]:
+        for sym_or_mass, occ_frac in zip(site_atoms_set, site_occ_fracs_set):
+            if isinstance(sym_or_mass, float):
                 site_iso.append(
-                    (occ_frac * a_i, m_i)
+                    ('?', occ_frac, sym_or_mass)
                     )
+            else:
+                for z_i, m_i, a_i in atoms.isotope_data[sym_or_mass]:
+                    site_iso.append(
+                        ("{0}_{1}".format(z_i, sym_or_mass), occ_frac * a_i, m_i)
+                        )
         
         site_comps.append(
             (site_name, site_iso)
@@ -184,20 +203,26 @@ if __name__ == "__main__":
     m_vars = []
     
     for site_label, site_comp in site_comps:
-        site_a_i = [a_i for a_i, _ in site_comp]
-        site_m_i = [m_i for _, m_i in site_comp]
+        print(site_label)
+        print('-' * len(site_label))
+        print("")
+        
+        for sym, a_i, m_i in site_comp:
+            print("  {0: <7} : a_i = {1: >6.2f} %, m_i = {2: >10.5f}".format(sym, a_i * 100.0, m_i))
+        
+        print("")
+        
+        site_a_i = [a_i for _, a_i, _ in site_comp]
+        site_m_i = [m_i for _, _, m_i in site_comp]
         
         m_ave = sum(
-            a_i * m_i for a_i, m_i in site_comp
+            a_i * m_i for _, a_i, m_i in site_comp
             )
     
         m_var = sum(
             a_i * (1.0 - (m_i / m_ave)) ** 2
-                for a_i, m_i in site_comp
+                for _, a_i, m_i in site_comp
             )
-        
-        print(site_label)
-        print('-' * len(site_label))
         
         print("  m_ave = {0:.5f}".format(m_ave))
         print("  m_var = {0:.5e}".format(m_var))
@@ -206,6 +231,8 @@ if __name__ == "__main__":
         
         m_aves.append(m_ave)
         m_vars.append(m_var)
+        
+        print("")
     
     # Use collected averages/variances to generate Phono3py input tags.
     
@@ -216,4 +243,4 @@ if __name__ == "__main__":
     m_var_str = " ".join("{0:.5e}".format(m_var) for m_var in m_vars)
     
     print("  --mass=\"{0}\"".format(m_ave_str))
-    print("  --mass-variance=\"{0}\"".format(m_var_str))
+    print("  --mass-variances=\"{0}\"".format(m_var_str))
