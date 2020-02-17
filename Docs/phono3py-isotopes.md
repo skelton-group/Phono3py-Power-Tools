@@ -1,21 +1,21 @@
 # phono3py-isotopes
 
-`phono3py-isotopes` is a simple script to generate input parameters to simulate the effect of mass variation at atomic sites in the input crystal structure on the lattice thermal conductivity <i>&kappa;</i><sub>latt</sub> in Phono3py calculations.
+`phono3py-isotopes` is a simple script to generate Phono3py input parameters for simulating the effect of mass variation at atomic sites on the lattice thermal conductivity <i>&kappa;</i><sub>latt</sub>.
 
 
 ## Theory
 
-The (average) mass of the atoms <i>m</i><sub>ave</sub> directly affects the phonon frequencies <i>&omega;<sub>&lambda;</sub></i> *via* the dynamical matrix ***D***(**q**), and also appears in the expression for the three-phonon interaction strengths <i>P<sub>&lambda;</sub></i> used to calculate the linewidths &Gamma;<sub><i>&lambda;</i></sub>.
+The average atomic masses <i>m</i><sub>ave</sub> directly affect the phonon frequencies <i>&omega;<sub>&lambda;</sub></i> *via* the dynamical matrix ***D***(**q**), and also appear in the expression for the three-phonon interaction strengths <i>P<sub>&lambda;</sub></i> used to calculate the linewidths &Gamma;<sub><i>&lambda;</i></sub>.
 More details and formulae can be found in [Ref. 1](#Ref1).
 
-In Phono3py, the average mass at the atomic sites in the input structure can be set using the `--mass` tag or corresponding `MASS` settings tag.
-For sites with *i* isotopes with abundance <i>a<sub>i</sub></i> and mass <i>m<sub>i</sub></i>, <i>m</i><sub>ave</sub> is calculated as:
+In Phono3py, the average mass at the atomic sites in the input structure can be set using the `--mass` command-line option or the corresponding `MASS` settings tag.
+For sites with *i* isotopes with fractional abundance <i>a<sub>i</sub></i> and mass <i>m<sub>i</sub></i> the average mass is calculated as:
 
 <img src="Resources/phono3py-isotopes_Equation1.png" alt="phono3py-isotopes_Equation1.png">
 
-The natural variation in atomic mass due to the presence of elemental isotopes with different masses can introduce additional "isotope scattering" and thus reduce <i>&kappa;</i><sub>latt</sub>.
+The natural mass variation at atomic sites due to the presence of isotopes with different masses can introduce additional "isotope scattering" and thus reduce <i>&kappa;</i><sub>latt</sub>.
 In Phono3py, isotope effects can be included using the model in [Ref. 2](#Ref2).
-The required parameter is the "mass variance" <i>m></i><sub>var</sub>, calculated using the formula:
+The required parameter is the "mass variance" <i>m></i><sub>var</sub>, which is calculated using the formula:
 
 <img src="Resources/phono3py-isotopes_Equation2.png" alt="phono3py-isotopes_Equation2.png">
 
@@ -24,13 +24,13 @@ The mass variance at the atomic sites can be set using the `--mass-variances`/`-
 
 ## Installation and requirements
 
-No installation is necessary, but you may add the script folder to your `$PATH` variable if you wish - e.g.:
+No installation is necessary, but you may wish to add the script folder to your `$PATH` variable - e.g.:
 
 ```bash
 export PATH=${PATH}:/mnt/d/Repositories/Phono3py-Tools
 ```
 
-The main `phono3py-isotopes` reads isotope data from the Phonopy database and therefore requires the `phonopy` Python library to be installed.
+`phono3py-isotopes` reads isotope data from the Phonopy database, and therefore requires the `phonopy` Python library to be installed.
 
 
 ## Brief tutorial
@@ -38,14 +38,14 @@ The main `phono3py-isotopes` reads isotope data from the Phonopy database and th
 
 ### a. Natural isotopic abundance <a name="Tutorial.A"></a>
 
-To obtain the appropriate `--mass` and `--mass-variances` tags to input the natural isotopic mass variance into Phono3py, simply run `phono3py-isotopes` with the list of atoms in the crystal structure (in site order):
+To obtain the appropriate `--mass-variances` tag to input the natural isotopic mass variance into Phono3py, run `phono3py-isotopes` with the list of atoms in the crystal structure (in site order):
 
 ```bash
 $ phono3py-isotopes Ga As
 ```
 
-The program prints for each atomic site a list of isotopes with their abundance and mass, followed by the average mass and mass variance.
-The `--mass` and `--mass-variances` tags to input into Phono3py are then printed at the end of the output.
+The program prints for each atomic site a list of isotopes with their abundance and mass, followed by the calculated average mass and mass variance.
+The `--mass` and `--mass-variances` tags to input into Phono3py are printed at the end of the output.
 
 ```
 Site 1 (Ga)
@@ -86,7 +86,7 @@ $ phono3py --dim="2 2 2" --dim-fc2="3 3 3" --pa="0 1/2 1/2  1/2 0 1/2  1/2 1/2 0
 	--mass="69.72307 74.92160" --mass-variances="1.97127e-04 0.00000e+00" -o "iso.nat.a"
 ```
 
-This example is somewhat contrived, as (a) the atomic masses used are the Phono3py defaults, so do not need to be set, and (b) the natural isotopic mass variance can be set automatically using the `--isotope` tag:
+This example is purely for illustrative purposes, because (a) the atomic masses used are the Phono3py defaults, so do not actually need to be set in this case, and (b) the natural isotopic mass variance can be set automatically using the `--isotope` tag:
 
 ```
 $ phono3py --dim="2 2 2" --dim-fc2="3 3 3" --pa="0 1/2 1/2  1/2 0 1/2  1/2 1/2 0" \
@@ -124,8 +124,8 @@ As expected, the last two commands give practically the same result.*
 <img src="Resources/phono3py-isotopes_TutorialA.png" alt="phono3py-isotopes_TutorialA.png" width="750">
 
 \* The results are not _exactly_ the same.
-This is because Phonopy has two different databases - a list of average masses, and a higher-precision list of isotopes used to calculate mass variance parameters for the `--isotope` tag.
-`phono3py-isotopes` uses the latter database for both, so the masses specified in the `--mass` tag will generally be slightly different from the defaults.
+This is because Phonopy has two different databases - a list of average masses, and a higher-precision list of isotopic masses used to calculate mass variances when the `--isotope` flag is set.
+`phono3py-isotopes` uses the latter database for both, so the masses specified in the `--mass` tag will usually be slightly different to the defaults.
 In practice, the differences in the calculated <i>&kappa;</i><sub>latt</sub> are negligably small.
 
 
@@ -133,15 +133,15 @@ In practice, the differences in the calculated <i>&kappa;</i><sub>latt</sub> are
 
 Suppose we replaced 1 % of the As with P.
 The effect of this doping/alloying on the thermal transport can be modelled approximately* by changing the average mass and mass variance at the anion site.
-The appropriate `--mass` and `--mass-variances` tags to input this into Phono3py can be generated with `phono3py-isotopes` using the `--site-average` flag.
+The appropriate `--mass` and `--mass-variances` tags to input this into Phono3py can be generated with `phono3py-isotopes` using the `--site-average` option.
 
 ```bash
 $ phono3py-isotopes Ga, As P --site-average --site-occupation="1.0, 0.99 0.01"
 ```
 
-The comma in the list of atomic symbols delineates atoms at the two atomic sites.
+The comma in the list of atomic symbols delineates atoms at the two atomic sites - Site 1 has Ga, and Site 2 has a mix of As and P.
 A corresponding list of site occupation fractions is also set with the `--site-occupation` parameter.
-Note that `phono3py-isotopes` automatically includes the natural isotopic mass variation when calculating the average masses and mass variance for the mixed sites.
+Note that `phono3py-isotopes` also includes the natural isotopic mass variation when calculating the average mass and mass variance for mixed sites.
 
 Running the command above produces the following output:
 
@@ -172,7 +172,7 @@ To input this data into Phono3py:
   --mass-variances="1.97127e-04 3.44672e-03"
 ```
 
-We can now input these `--mass` and `--mass-variances` parameters into Phono3py:
+We can now input these parameters into Phono3py:
 
 ```bash
 $ phono3py --dim="2 2 2" --dim-fc2="3 3 3" --pa="0 1/2 1/2  1/2 0 1/2  1/2 1/2 0" \
@@ -211,7 +211,7 @@ The doping changes the average mass as well as the mass variance, which will in 
 
 ### c. Specific isotope ratios <a name="Tutorial.C"></a>
 
-The `--site-average` option can also be used to set up calculations for specific isotopic ratios.
+The `--site-average` option can also be used to set up calculations for specific isotope ratios.
 
 Running the script to prepare data as in the first example lists the natural abundances and masses of the two isotopes of Ga:
 
@@ -224,14 +224,14 @@ $ phono3py-isotopes Ga As
 71_Ga   : a_i =  39.89 %, m_i =   70.92471
 ```
 
-We want to examine the effect of isotope composition on <b><i>&kappa;</i></b><sub>latt</sub>.
-The required mass and variance parameters can be prepared using `phono3py-isotopes` using the `--site-average` option and entering the two isotopic masses in place of atomic symbols in the atoms list:
+We want to examine the effect of isotope composition on <i>&kappa;</i><sub>latt</sub>.
+The required parameter sets can be prepared using `phono3py-isotopes` by using the `--site-average` option and entering the two isotope masses in place of atomic symbols in the list of atoms:
 
 ```
 $ phono3py-isotopes 68.92558 70.92471, As --site-average --site-occupation="0.5 0.5, 1.0"
 ```
 
-This performs a calculation with a 50/50 mix of two (arbitrary) atoms with masses of 68.92558 and 70.92471 amu at the Ga site:
+This calculates parameters for a 50/50 mixed site occupied by two (unspecified) atoms with masses of 68.92558 and 70.92471 amu at the Ga site:
 
 ```
 Site 1 (?, ?)
@@ -244,7 +244,7 @@ Site 1 (?, ?)
   m_var = 2.04341e-04
 ```
 
-The occupation fractions can be varied to simulate a range of isotopic compositions:
+The occupation fractions can be varied to simulate a range of isotope compositions:
 
 | % <sup>69</sup>Ga | % <sup>71</sup>Ga | Ave. Mass [amu] | Mass Var.   |
 | ----------------- | ----------------- | --------------- | ----------- |
@@ -260,7 +260,7 @@ The occupation fractions can be varied to simulate a range of isotopic compositi
 |                10 |                90 |        70.72480 | 7.19087e-05 |
 |                 0 |               100 |        70.92471 |           - |
 
-At this point, a shell script is probably in order:
+To run these calculations, a shell script is probably in order:
 
 ```bash
 #!/bin/bash
@@ -285,6 +285,10 @@ RunPhono3py 70.92471 0           "iso.0-100"
 ```
 
 Note again that we have not used the `--read-gamma` option because we are changing the average mass at each step.
+
+Two effects are visible in these results.
+<i>&kappa;</i><sub>latt</sub> falls to a minimum at the 50/50 isotope ratio, which is where the mass variance at the Ga site is largest.
+The pure <sup>71</sup>Ga composition is predicted to have a lower <i>&kappa;</i><sub>latt</sub> than the <sup>69</sup>Ga composition, which must be purely down to the effect of the different atomic masses on the phonon frequencies and three-phonon interaction strengths.
 
 <table>
   <tr>
