@@ -1,11 +1,9 @@
 # phono3py-isotopes
-----------
 
 `phono3py-isotopes` is a simple script to generate input parameters to simulate the effect of mass variation at atomic sites in the input crystal structure on the lattice thermal conductivity <i>&kappa;</i><sub>latt</sub> in Phono3py calculations.
 
 
 ## Theory
-----------
 
 The (average) mass of the atoms <i>m</i><sub>ave</sub> directly affects the phonon frequencies <i>&omega;<sub>&lambda;</sub></i> *via* the dynamical matrix ***D***(**q**), and also appears in the expression for the three-phonon interaction strengths <i>P<sub>&lambda;</sub></i> used to calculate the linewidths &Gamma;<sub><i>&lambda;</i></sub>.
 More details and formulae can be found in [Ref. 1](#Ref1).
@@ -13,23 +11,18 @@ More details and formulae can be found in [Ref. 1](#Ref1).
 In Phono3py, the average mass at the atomic sites in the input structure can be set using the `--mass` tag or corresponding `MASS` settings tag.
 For sites with *i* isotopes with abundance <i>a<sub>i</sub></i> and mass <i>m<sub>i</sub></i>, <i>m</i><sub>ave</sub> is calculated as:
 
-<br>
 <img src="Resources/phono3py-isotopes_Equation1.png" alt="phono3py-isotopes_Equation1.png">
-<br>
 
 The natural variation in atomic mass due to the presence of elemental isotopes with different masses can introduce additional "isotope scattering" and thus reduce <i>&kappa;</i><sub>latt</sub>.
 In Phono3py, isotope effects can be included using the model in [Ref. 2](#Ref2).
 The required parameter is the "mass variance" <i>m></i><sub>var</sub>, calculated using the formula:
 
-<br>
 <img src="Resources/phono3py-isotopes_Equation2.png" alt="phono3py-isotopes_Equation2.png">
-<br>
 
 The mass variance at the atomic sites can be set using the `--mass-variances`/`--mv` command-line parameters or the corresponding `MASS_VARIANCES` tag.
 
 
 ## Installation and requirements
-----------
 
 No installation is necessary, but you may add the script folder to your `$PATH` variable if you wish - e.g.:
 
@@ -41,7 +34,6 @@ The main `phono3py-isotopes` reads isotope data from the Phonopy database and th
 
 
 ## Brief tutorial
-----------
 
 
 ### a. Natural isotopic abundance <a name="Tutorial.A"></a>
@@ -321,7 +313,6 @@ Note again that we have not used the `--read-gamma` option because we are changi
 
 
 ## Notes and References
-----------
 
 The equations in this document were produced using the [Online LaTeX Equation Editor](https://www.codecogs.com/latex/eqneditor.php) from [CodeCogs](https://www.codecogs.com/).
 
