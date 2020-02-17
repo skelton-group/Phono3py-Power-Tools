@@ -97,7 +97,7 @@ As expected, the last two commands give practically the same result.*
 
 <table>
   <tr>
-    <th rowspan="2" style="vertical-align:bottom;">Calc.</th>
+    <th rowspan="2">Calc.</th>
     <th colspan="2"><i>&kappa;</i><sub>latt</sub> [W m<sup>-1</sup> K<sup>-1</sup>]</th>
   </tr>
  <tr>
@@ -185,7 +185,7 @@ The doping changes the average mass as well as the mass variance, which will in 
 
 <table>
   <tr>
-    <th rowspan="2" style="vertical-align:bottom;">Calc.</th>
+    <th rowspan="2">Calc.</th>
     <th colspan="2"><i>&kappa;</i><sub>latt</sub> [W m<sup>-1</sup> K<sup>-1</sup>]</th>
   </tr>
  <tr>
@@ -288,8 +288,8 @@ Note again that we have not used the `--read-gamma` option because we are changi
 
 <table>
   <tr>
-    <th rowspan="2" style="vertical-align:bottom;">% <sup>69</sup>Ga</th>
-    <th rowspan="2" style="vertical-align:bottom;">% <sup>79</sup>Ga</th>
+    <th rowspan="2">% <sup>69</sup>Ga</th>
+    <th rowspan="2">% <sup>79</sup>Ga</th>
     <th colspan="2"><i>&kappa;</i><sub>latt</sub> [W m<sup>-1</sup> K<sup>-1</sup>]</th>
   </tr>
  <tr>
