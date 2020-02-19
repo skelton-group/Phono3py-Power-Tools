@@ -58,7 +58,7 @@ if __name__ == "__main__":
     # Command-line arguments.
     
     parser = ArgumentParser(
-        description = "Generate Phono3py input for modelling isotope effects or alloying"
+        description = "Generate Phono3py input for modelling isotope effects"
         )
     
     parser.add_argument(

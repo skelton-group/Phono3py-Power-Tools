@@ -1,0 +1,163 @@
+#!/usr/bin/env python
+
+
+# -------
+# Imports
+# -------
+
+from argparse import ArgumentParser
+
+# These imports will fail if Phonopy is not installed, or perhaps if a (very) old version of Phonopy is installed.
+# If this happens, intercept the ImportErrors with a clearer error message.
+
+try:
+    from phonopy import Phonopy
+    from phonopy.harmonic.dynmat_to_fc import DynmatToForceConstants
+    from phonopy.interface.vasp import read_vasp
+except ImportError:
+    raise Exception("Error: This script requires a recent version of Phonopy to be installed.")
+
+
+# ---------
+# Functions
+# ---------
+
+def ParseFracVal(val):
+    """ Parses fractional values entered as strings of the form 'X/Y'. """
+    
+    if '/' in val:
+        # Assume val is a fraction.
+        
+        num, denom = val.split('/')
+        
+        return float(num) / float(denom)
+    else:
+        # Assume val is a float.
+        
+        return float(val)
+
+def ParseMatrix(mat_str):
+    """
+    Attempt to parse and return a 3x3 matrix from mat_str.
+    
+    mat_str may consist of either:
+      - the three diagonal values xx, yy and zz
+      - all nine elements xx, xy, xz, yx, yy, yz, zx, zy, zz
+    
+    Elements are converted to floats using ParseFracVal() and may therefore be specified as fractions (e.g. 1/2).
+    """
+    
+    elements = [
+        ParseFracVal(val) for val in mat_str.split()
+        ]
+    
+    if len(elements) == 3:
+        xx, yy, zz = elements
+        
+        return [
+            [xx, 0 , 0 ],
+            [0 , yy, 0 ],
+            [0 , 0 , zz]
+            ]
+        
+    elif len(elements) == 9:
+        xx, xy, xz, yx, yy, yz, zx, zy, zz = elements
+        
+        return [
+            [xx, xy, xz],
+            [yx, yy, yz],
+            [zx, zy, zz]
+            ]
+    
+    else:
+        raise Exception("Error: Matrices must be specified as three diagonal elements or all nine elements.")
+
+
+# ----
+# Main
+# ----
+
+if __name__ == "__main__":
+    # Parse command-line arguments.
+    
+    parser = ArgumentParser(
+        description = "List commensurate q-points for a given supercell expansion"
+        )
+    
+    parser.add_argument(
+        "-c",
+        metavar = "poscar_file",
+        dest = "Structure", default="POSCAR",
+        help = "Crystal structure (must be a VASP POSCAR file; default: POSCAR)"
+        )
+    
+    parser.add_argument(
+        "--dim",
+        metavar = "supercell_matrix",
+        dest = "SupercellMatrix", required = True,
+        help = "Supercell dimension (3 values) or matrix (9 values) - fractional values e.g. 1/2 accepted"
+        )
+    
+    parser.add_argument(
+        "--pa", "--primitive_axis",
+        metavar = "primitive_matrix",
+        dest = "PrimitiveMatrix",
+        help = "Transformation matrix to a primitive cell"
+        )
+    
+    args = parser.parse_args()
+    
+    # Parse primitive and supercell matrices.
+    
+    supercell_matrix = ParseMatrix(args.SupercellMatrix)
+
+    primitive_matrix = None
+    
+    if args.PrimitiveMatrix is not None:
+        primitive_matrix = ParseMatrix(args.PrimitiveMatrix)
+    
+    # Read structure.
+    
+    structure = read_vasp(args.Structure)
+    
+    # Construct a Phonopy object.
+    
+    phonon = Phonopy(
+        structure, supercell_matrix,
+        primitive_matrix = primitive_matrix
+        )
+    
+    # Construct a DynmatToForceConstants object.
+    
+    dynmat_to_fc = DynmatToForceConstants(
+        phonon.get_primitive(),
+        phonon.get_supercell()
+        )
+    
+    # Print input parameters and list commensurate points.
+    
+    print("Strucure: {0}".format(args.Structure))
+    print("")
+    
+    if primitive_matrix is not None:
+        print("Primitive Matrix")
+        print("----------------")
+        
+        for row in primitive_matrix:
+            print("[ {0: >6.3f} {1: >6.3f} {2: >6.3f} ]".format(*row))
+    
+        print("")
+    
+    print("Supercell Matrix")
+    print("----------------")
+    
+    for row in supercell_matrix:
+        print("[ {0: >6.3f} {1: >6.3f} {2: >6.3f} ]".format(*row))
+    
+    print("")
+    
+    print("Commensurate Points")
+    print("-------------------")
+    
+    for i, (q_x, q_y, q_z) in enumerate(dynmat_to_fc.commensurate_points):
+        print("{0: >4} : {1: >6.3f} {2: >6.3f} {3: >6.3f}".format(i + 1, q_x, q_y, q_z))

@@ -27,16 +27,28 @@ if __name__ == "__main__":
         )
     
     parser.add_argument(
-        metavar = "<input_file>",
-        nargs = '+', dest = 'input_files',
+        metavar = "input_file",
+        nargs = '+', dest = 'InputFiles',
         help = "Phono3py kappa-*.hdf5 files to read"
+        )
+    
+    parser.add_argument(
+        "-o", "--output-file",
+        metavar = "output_file",
+        dest = "OutputFile",
+        help = "Output file to write (single input file only)"
         )
     
     args = parser.parse_args()
     
+    # Sanity check.
+    
+    if args.OutputFile is not None and len(args.InputFiles) > 1:
+        raise Exception("Error: The -o/--output-file option can only be used when one input file is specified.")
+    
     # Loop over input files.
     
-    for input_file in args.input_files:
+    for input_file in args.InputFiles:
         # Read input file.
         
         t_arr, k_arr = None, None
@@ -63,13 +75,18 @@ if __name__ == "__main__":
                 [t] + [k_ab for k_ab in k] + [k_iso]
                 )
         
-        # Generate an output file name based on the input file:
-        #   kappa-m*.hdf5 --> kappa-m*.csv
+        # Name for output file.
         
-        _, tail = os.path.split(input_file)
-        root, _ = os.path.splitext(tail)
+        output_file = args.OutputFile
         
-        output_file = r"{0}.csv".format(root)
+        if output_file is None:
+            # Generate an output file name based on the input file:
+            #   kappa-m*.hdf5 --> kappa-m*.csv
+            
+            _, tail = os.path.split(input_file)
+            root, _ = os.path.splitext(tail)
+            
+            output_file = r"{0}.csv".format(root)
         
         # Write output file.
         
