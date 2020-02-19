@@ -18,19 +18,19 @@ For ease of use on Unix(-like) systems, you may wish to add the scripts folder t
 export PATH=${PATH}:/mnt/d/Repositories/Phono3py-Tools
 ```
 
-`phono3py-get-kappa` requires the [H5py package](https://www.h5py.org) to read the `kappa-m*.hdf5` HDF5 files produced by Phono3py.
+`phono3py-get-kappa` requires the [H5py package](https://www.h5py.org), which is also used by Phono(3)py.
 
 
 ## Usage examples
 
-To extract data from a Phono3py HDF5 file, run the script with the file path, e.g.:
+To extract data from a Phono3py HDF5 file, run the script with the file path - e.g.:
 
 ```bash
 $ phono3py-get-kappa kappa-m161616.hdf5
 ```
 
-By default, `phono3py-get-kappa` writes output files to the current working directory named `<root>.csv`, so the command above will output to a file named `kappa-m161616.csv`.
-This has the following format:
+By default, `phono3py-get-kappa` writes output files to the current working directory named `<root>.csv`, so the command above will output the data to a file named `kappa-m161616.csv`.
+The CSV format is one row per line with headers/values separated by commas:
 
 ```
 T [K],k_xx [W/m.K],k_yy [W/m.K],k_zz [W/m.K],k_yz [W/m.K],k_xz [W/m.K],k_xy [W/m.K],k_iso [W/m.K]
@@ -47,25 +47,25 @@ T [K],k_xx [W/m.K],k_yy [W/m.K],k_zz [W/m.K],k_yz [W/m.K],k_xz [W/m.K],k_xy [W/m
 100.0,4.051303739267106,1.3919940640409125,5.476318212926482,-7.124858258576519e-19,-5.42770676491479e-16,1.839562132785157e-35,3.6398720054114997
 ```
 
-An output file can be specified using the `-o`/`--output-file` command-line option:
+The default output file name can be overridden using the `-o`/`--output-file` command-line option:
 
 ```bash
 $ phono3py-get-kappa kappa-m161616.hdf5 -o kappa.csv
 ```
 
 `phono3py-get-kappa` can accept multiple input files.
-Using the automatic naming, this makes it easy to process a directory with multiple files, for example generated from a mesh convergence test:
+Using the automatic naming, this makes it easy to process a directory with multiple files, as might for example be generated from a mesh convergence test:
 
 ```bash
 $ phono3py-get-kappa kappa-m*.hdf5
 ```
 
-Note that the `-o`/`--output-file` option does not work when more than one input file is specified.
+(Note that the `-o`/`--output-file` option does not work when more than one input file is specified.)
 
 
 ## Working with CSV files in Python
 
-The following function can be used to read the files produced by `phono3py-get-kappa` into a Python script:
+The following function can be used to read the CSV files produced by `phono3py-get-kappa` into a Python script:
 
 ```python
 import csv
@@ -102,7 +102,7 @@ def ReadKappaCSV(file_path):
         ]
 ```
 
-An example of a simple plotting script might be:
+The following example plotting script reads the temperature, the diagonal <i>&kappa;<sub>xx</sub></i>, <i>&kappa;<sub>yy</sub></i> and <i>&kappa;<sub>zz</sub></i> components of <b><i>&kappa;</i></b><sub>latt</sub> and the average <i>&kappa;</i><sub>iso</sub> from a CSV file and plots them using [Matplotlib](https://matplotlib.org):
 
 ```python
 import matplotlib.pyplot as plt
@@ -150,4 +150,4 @@ plt.savefig(
     )
 ```
 
-<img src="Resources/phono3py-get-kappa_ExamplePlot.png" alt="phono3py-get-kappa_ExamplePlot.png" width="750">
+<img src="Resources/phono3py-get-kappa_ExamplePlot.png" alt="phono3py-get-kappa_ExamplePlot.png" width="500">
