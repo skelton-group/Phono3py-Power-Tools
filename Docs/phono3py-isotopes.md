@@ -227,7 +227,7 @@ $ phono3py-isotopes Ga As
 We want to examine the effect of isotope composition on <i>&kappa;</i><sub>latt</sub>.
 The required parameter sets can be prepared using `phono3py-isotopes` by using the `--site-average` option and entering the two isotope masses in place of atomic symbols in the list of atoms:
 
-```
+```bash
 $ phono3py-isotopes 68.92558 70.92471, As --site-average --site-occupation="0.5 0.5, 1.0"
 ```
 
@@ -316,6 +316,65 @@ The pure <sup>71</sup>Ga composition is predicted to have a lower <i>&kappa;</i>
 <img src="Resources/phono3py-isotopes_TutorialC.png" alt="phono3py-isotopes_TutorialC.png" width="750">
 
 
+### d. Automating parameter generation <a name="TutorialD"></a>
+
+In the last example, the parameters for a set of 11 isotope ratios were collected by hand and input into a shell script to perform the Phono3py calculations.
+This way of doing things is probably OK for a one off, but it will quickly become tedious for larger problems.
+
+To help with this, `phono3py-isotopes` has a `--scriptable` flag that requests a more concise, "scripting friendly" output:
+
+```bash
+$ phono3py-isotopes 68.92558 70.92471, As --site-average --site-occupation="0.5 0.5, 1.0" --scriptable
+```
+
+With this option, the script prints just two lines of output:
+
+```
+69.92515 74.92160
+2.04341e-04 0.00000e+00
+```
+
+The first line lists the average masses at each site, separated by single spaces, and the second lists the corresponding mass variances.
+
+Suppose we set up a text file with a list of isotopic compositions (site occupations) like the following:
+
+```bash
+$ cat compositions.dat
+1.0  0.0
+0.9  0.1
+0.8  0.2
+...
+0.0  1.0
+```
+
+We can modify the script from the previous example to read this file, generate the parameters for each isotope composition, and then perform the Phono3py calculations:
+
+```bash
+#!/bin/bash
+
+function RunPhono3py() {
+  phono3py --dim="2 2 2" --dim-fc2="3 3 3" --pa="0 1/2 1/2  1/2 0 1/2  1/2 1/2 0" \
+    --fc2 --fc3 -v --br --mesh="32 32 32" \
+    --mass="${1} 74.92160" --mass-variances="${2} 0.0" -o "${3}"
+  }
+
+while read -r x y
+do
+  params=$(
+    phono3py-isotopes 68.92558 70.92471 \
+    --site-average --site-occupation="${x} ${y}" \
+    --scriptable
+    )
+
+  read -r m_ave m_var <<< ${params}
+
+  RunPhono3py "${m_ave}" "${m_var}" "iso.${x}-${y}"
+done < "compositions.dat"
+```
+
+Note that we have simplified things further by only computing the average mass and mass variance at the Ga site, as the parameters for the As site will be the same in every run.
+
+
 ## Notes and References
 
 The equations in this document were produced using the [Online LaTeX Equation Editor](https://www.codecogs.com/latex/eqneditor.php) from [CodeCogs](https://www.codecogs.com/).
@@ -323,3 +382,4 @@ The equations in this document were produced using the [Online LaTeX Equation Ed
 1. <a name="Ref1"></a> A. Togo, L. Chaput and I. Tanaka, *Physical Review B* **91**, 093206 (**2015**), DOI: [10.1103/PhysRevB.91.094306](https://doi.org/10.1103/PhysRevB.91.094306)
 2. <a name="Ref2"></a> S.-I. Tamura, *Physical Review B* **27** (*2*), 858-866 (**1983**), DOI: [10.1103/PhysRevB.27.858](https://doi.org/10.1103/PhysRevB.27.858)
 3. <a name="Ref3"></a> J. Carrete, B. Vermeersch, A. Katre, A. van Roekeghem, T. Wan, G. K. H. Madsen and N. Mingo, *Computer Physics Communications* **220**, 351-362 (**2017**), DOI: [10.1016/j.cpc.2017.06.023](https://doi.org/10.1016/j.cpc.2017.06.023)
+4. 

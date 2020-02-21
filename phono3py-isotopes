@@ -80,6 +80,12 @@ if __name__ == "__main__":
         help = "Site occupation fractions; can be fractions - e.g. 1/3, and sites should be separated with commas"
         )
     
+    parser.add_argument(
+        '--scriptable',
+        dest = 'Scriptable', action = 'store_true',
+        help = "Prints only two lines of output: (1) averaged masses; and (2) mass variance parameters."
+        )
+    
     args = parser.parse_args()
     
     # Process list of atomic symbols/masses.
@@ -203,14 +209,15 @@ if __name__ == "__main__":
     m_vars = []
     
     for site_label, site_comp in site_comps:
-        print(site_label)
-        print('-' * len(site_label))
-        print("")
-        
-        for sym, a_i, m_i in site_comp:
-            print("  {0: <7} : a_i = {1: >6.2f} %, m_i = {2: >10.5f}".format(sym, a_i * 100.0, m_i))
-        
-        print("")
+        if not args.Scriptable:
+            print(site_label)
+            print('-' * len(site_label))
+            print("")
+            
+            for sym, a_i, m_i in site_comp:
+                print("  {0: <7} : a_i = {1: >6.2f} %, m_i = {2: >10.5f}".format(sym, a_i * 100.0, m_i))
+            
+            print("")
         
         site_a_i = [a_i for _, a_i, _ in site_comp]
         site_m_i = [m_i for _, _, m_i in site_comp]
@@ -224,23 +231,32 @@ if __name__ == "__main__":
                 for _, a_i, m_i in site_comp
             )
         
-        print("  m_ave = {0:.5f}".format(m_ave))
-        print("  m_var = {0:.5e}".format(m_var))
-        
-        print("")
+        if not args.Scriptable:
+            print("  m_ave = {0:.5f}".format(m_ave))
+            print("  m_var = {0:.5e}".format(m_var))
+            
+            print("")
         
         m_aves.append(m_ave)
         m_vars.append(m_var)
         
+    if not args.Scriptable:
         print("")
     
     # Use collected averages/variances to generate Phono3py input tags.
-    
-    print("To input this data into Phono3py:")
-    print("---------------------------------")
-    
+
     m_ave_str = " ".join("{0:.5f}".format(m_ave) for m_ave in m_aves)
     m_var_str = " ".join("{0:.5e}".format(m_var) for m_var in m_vars)
     
-    print("  --mass=\"{0}\"".format(m_ave_str))
-    print("  --mass-variances=\"{0}\"".format(m_var_str))
+    if args.Scriptable:
+        # Minimal output for using this program within other scripts.
+        
+        print(m_ave_str)
+        print(m_var_str)
+    
+    else:
+        print("To input this data into Phono3py:")
+        print("---------------------------------")
+        
+        print("  --mass=\"{0}\"".format(m_ave_str))
+        print("  --mass-variances=\"{0}\"".format(m_var_str))
