@@ -177,7 +177,7 @@ We can now input these parameters into Phono3py:
 ```bash
 $ phono3py --dim="2 2 2" --dim-fc2="3 3 3" --pa="0 1/2 1/2  1/2 0 1/2  1/2 1/2 0" \
     --fc2 --fc3 -v --br --mesh="32 32 32" \
-    --mass="69.72307 74.48212" --mass-variances="1.97127e-04 3.44672e-03" -o "As99-P1" 
+    --mass="69.72307 74.48212" --mass-variances="1.97127e-04 3.44672e-03" -o "As99-P1"
 ```
 
 Note that we did not use the `--read-gamma` tag as in the previous example.
@@ -382,4 +382,3 @@ The equations in this document were produced using the [Online LaTeX Equation Ed
 1. <a name="Ref1"></a> A. Togo, L. Chaput and I. Tanaka, *Physical Review B* **91**, 093206 (**2015**), DOI: [10.1103/PhysRevB.91.094306](https://doi.org/10.1103/PhysRevB.91.094306)
 2. <a name="Ref2"></a> S.-I. Tamura, *Physical Review B* **27** (*2*), 858-866 (**1983**), DOI: [10.1103/PhysRevB.27.858](https://doi.org/10.1103/PhysRevB.27.858)
 3. <a name="Ref3"></a> J. Carrete, B. Vermeersch, A. Katre, A. van Roekeghem, T. Wan, G. K. H. Madsen and N. Mingo, *Computer Physics Communications* **220**, 351-362 (**2017**), DOI: [10.1016/j.cpc.2017.06.023](https://doi.org/10.1016/j.cpc.2017.06.023)
-4. 

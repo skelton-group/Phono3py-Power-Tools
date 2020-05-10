@@ -17,7 +17,7 @@ More complete documentation can be found in the [project subfolder](./Phonopy-Im
 ### phono3py-get-kappa
 
 Command-line script for extracting thermal-conductivity tensors (<b><i>&kappa;</i></b><sub>latt</sub>) from the `kappa-m*.hdf5` files produced by Phono3py to plain-text comma-separated values (CSV) files.
-More complete documentation can be found [here](./Docs/phono3py-get-kappa).
+More complete documentation can be found [here](./Docs/phono3py-get-kappa.md).
 
 ### phono3py-isotopes
 
