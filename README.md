@@ -1,9 +1,19 @@
 # Phono3py-Tools
 
-An assortment of tools for working with Phono(3)py.
+Tools for Phono(3)py power users.
 
 
 ## Utilities for Phonopy
+
+### phonopy-get-comm-pts
+
+Command-line script to list the commensurate wavevectors (**q**-points) associated with a chosen supercell expansion.
+Documentation and a usage example [here](./Docs/phonopy-get-comm-pts.md).
+
+### phonopy-get-trans-mat
+
+Command-line script to find the transformation matrix between a conventional and primitive cell such as the `BPOSCAR` and `PPOSCAR` obtained with `phonopy --symmetry`.
+Documentation and a usage example [here](./Docs/phonopy-get-trans-mat.md).
 
 ### Phonopy-Importer
 

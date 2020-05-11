@@ -27,7 +27,7 @@ The mass variance at the atomic sites can be set using the `--mass-variances`/`-
 No installation is necessary, but you may wish to add the script folder to your `$PATH` variable - e.g.:
 
 ```bash
-export PATH=${PATH}:/mnt/d/Repositories/Phono3py-Tools
+export PATH=${PATH}:/mnt/d/Repositories/Phono3py-Power-Tools
 ```
 
 `phono3py-isotopes` reads isotope data from the Phonopy database, and therefore requires the `phonopy` Python library to be installed.

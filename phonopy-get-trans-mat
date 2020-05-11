@@ -1,0 +1,143 @@
+#!/usr/bin/env python
+
+
+# -------
+# Imports
+# -------
+
+from argparse import ArgumentParser
+
+import numpy as np
+
+
+# ---------
+# Functions
+# ---------
+
+def ReadBasisFromPOSCAR(file_path):
+    """ Reads the lattice vectors from a VASP POSCAR file. """
+
+    v_latt = None
+
+    with open(file_path, 'r') as input_reader:
+        # Line 1: System name.
+
+        next(input_reader)
+
+        # Line 2: Scale factor.
+
+        scale = float(
+            next(input_reader).strip()
+            )
+
+        # Lines 3-5: Lattice vectors.
+
+        v_latt = [
+            [scale * float(val) for val in next(input_reader).strip().split()[:3]]
+                for _ in range(3)
+            ]
+
+    return np.array(
+        v_latt, dtype = np.float64
+        )
+
+
+# ---------
+# Constants
+# ---------
+
+""" Numerical tolerance to determine whether abs(x) is zero. """
+
+_ZeroTolerance = 1.0e-5
+
+
+# ----
+# Main
+# ----
+
+if __name__ == "__main__":
+    # Parse command-line arguments.
+
+    parser = ArgumentParser(
+        description = "Find the transformation matrix M_p between a conventional cell and a primitive cell"
+        )
+
+    parser.add_argument(
+        metavar = "poscar_conv",
+        dest="ConvCell",
+        help = "Conventional cell (VASP POSCAR file; default: PPOSCAR)"
+        )
+
+    parser.add_argument(
+        metavar = "poscar_prim",
+        dest = "PrimCell",
+        help = "Primitive cell (VASP POSCAR file; default: BPOSCAR)"
+        )
+
+    args = parser.parse_args()
+
+    # Read basis vectors for conventional and primitive cells.
+
+    v_conv = ReadBasisFromPOSCAR(args.ConvCell)
+
+    print("Conventional cell:")
+    print("------------------")
+
+    for row_index, label in enumerate(["a", "b", "c"]):
+        print("  {0} = [ {1: >10.5f}  {2: >10.5f}  {3: >10.5f} ]".format(label, *v_conv[row_index]))
+
+    print("")
+
+    v_prim = ReadBasisFromPOSCAR(args.PrimCell)
+
+    print("Primitive cell:")
+    print("---------------")
+
+    for row_index, label in enumerate(["a", "b", "c"]):
+        print("  {0} = [ {1: >10.5f}  {2: >10.5f}  {3: >10.5f} ]".format(label, *v_prim[row_index]))
+
+    print("")
+
+    # Determine transformation matrix M_p.
+
+    m_p = np.linalg.solve(v_conv.T, v_prim.T)
+
+    # Check result is "sane" -- M_p^-1 should have integer elements.
+
+    m_p_inv = np.linalg.inv(m_p)
+
+    res = np.abs(
+        np.rint(m_p_inv) - m_p_inv
+        )
+
+    if (res >= _ZeroTolerance).any():
+        raise Exception("Error: Inverse transformation M_p^-1 is not integer - please check input cells.")
+
+    # Print M_p and M_p^-1.
+
+    print("Transformation M_p:")
+    print("-------------------")
+
+    for row_index in range(3):
+        print("  [ {0: >6.3f}  {1: >6.3f}  {2: >6.3f} ]".format(*m_p[row_index]))
+
+    print("")
+
+    print("Inverse transformation M_p ^ -1:")
+    print("--------------------------------")
+
+    for row_index in range(3):
+        print("  [ {0: >2.0f}  {1: >2.0f}  {2: >2.0f} ]".format(*m_p_inv[row_index]))
+
+    print("")
+
+    # Print command-line tag to input M_p into Phono(3)py.
+
+    print("To input this information into Phono(3)py:")
+    print("------------------------------------------")
+
+    m_p_str = " ".join(["{0:.3f}".format(val) for val in m_p[0]])
+    m_p_str += "  " + " ".join(["{0:.3f}".format(val) for val in m_p[1]])
+    m_p_str += "  " + " ".join(["{0:.3f}".format(val) for val in m_p[2]])
+
+    print("  --pa=\"{0}\"".format(m_p_str))

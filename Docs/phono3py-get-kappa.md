@@ -15,10 +15,10 @@ No installation is necessary.
 For ease of use on Unix(-like) systems, you may wish to add the scripts folder to your `$PATH` variable - e.g.:
 
 ```bash
-export PATH=${PATH}:/mnt/d/Repositories/Phono3py-Tools
+export PATH=${PATH}:/mnt/d/Repositories/Phono3py-Power-Tools
 ```
 
-`phono3py-get-kappa` requires the [H5py package](https://www.h5py.org), which is also used by Phono(3)py.
+`phono3py-get-kappa` requires the [NumPy](https://numpy.org) and [H5py package](https://www.h5py.org), which are also used by Phono(3)py.
 
 
 ## Usage examples

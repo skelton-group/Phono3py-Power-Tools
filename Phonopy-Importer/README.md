@@ -24,8 +24,8 @@ For infrequent use, it is probably most straightforward to clone the repository,
 Alternatively, code can be installed by adding the root folder of the repository to the `PATH` and `PYTHONPATH` variables, e.g.:
 
 ```bash
-> export PATH=${PATH}:/mnt/d/Repositories/PhonopyImporter
-> export PYTHONPATH=${PYTHONPATH}:/mnt/d/Repositories/PhonopyImporter
+> export PATH=${PATH}:/mnt/d/Repositories/Phono3py-Power-Tools/PhonopyImporter
+> export PYTHONPATH=${PYTHONPATH}:/mnt/d/Repositories/Phono3py-Power-Tools/PhonopyImporter
 ```
 
 `PhonopyImporter` uses the Phonopy Python API, so Phonopy must be installed to use it, and also requires `NumPy`.
