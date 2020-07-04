@@ -51,11 +51,21 @@ if __name__ == "__main__":
     for input_file in args.InputFiles:
         # Read input file.
         
-        t_arr, k_arr = None, None
+        t_arr = None
+        k_arr_rta, k_arr_lbte = None, None
         
         with h5py.File(input_file, 'r') as f:
             t_arr = f['temperature'][:]
-            k_arr = f['kappa'][:]
+            
+            try:
+                # Assume LBTE calculation.
+                
+                k_arr_rta = f['kappa_RTA'][:]
+                k_arr_lbte = f['kappa'][:]
+            except KeyError:
+                # If the kappa_rta key is not present, assume an RTA calculation.
+                
+                k_arr_rta = f['kappa'][:]
 
         # Prepare output data.
 
@@ -66,34 +76,56 @@ if __name__ == "__main__":
             "k_iso [W/m.K]"
             ]
         
-        data_rows = []
+        output_data = None
         
-        for t, k in zip(t_arr, k_arr):
-            k_iso = np.mean(k[:3])
+        if k_arr_lbte is not None:
+            # LBTE calculation -> output LBTE + RTA as two separate sets of data.
             
-            data_rows.append(
-                [t] + [k_ab for k_ab in k] + [k_iso]
-                )
-        
-        # Name for output file.
-        
-        output_file = args.OutputFile
-        
-        if output_file is None:
-            # Generate an output file name based on the input file:
-            #   kappa-m*.hdf5 --> kappa-m*.csv
+            output_data = [
+                (t_arr, k_arr_rta , "RTA" ),
+                (t_arr, k_arr_lbte, "LBTE")
+                ]
+        else:
+            # RTA calculation -> output one set of data.
             
-            _, tail = os.path.split(input_file)
-            root, _ = os.path.splitext(tail)
-            
-            output_file = r"{0}.csv".format(root)
+            output_data = [
+                (t_arr, k_arr_rta, None)
+                ]
         
-        # Write output file.
+        for t_arr_out, k_arr_out, output_suffix in output_data:
+            data_rows = []
+            
+            for t, k in zip(t_arr_out, k_arr_out):
+                k_iso = np.mean(k[:3])
+                
+                data_rows.append(
+                    [t] + [k_ab for k_ab in k] + [k_iso]
+                    )
+            
+            # Name for output file.
+            
+            output_file = args.OutputFile
         
-        with open(output_file, 'wb') as output_writer:
-            output_writer_csv = csv.writer(output_writer)
+            if output_file is None:
+                # Generate an output file name based on the input file:
+                #   kappa-m*.hdf5 --> kappa-m*.csv
+                
+                _, tail = os.path.split(input_file)
+                root, _ = os.path.splitext(tail)
+                
+                output_file = r"{0}.csv".format(root)
             
-            output_writer_csv.writerow(header_row)
+            if output_suffix is not None:
+                root, ext = os.path.splitext(output_file)
+                
+                output_file = "{0}.{1}{2}".format(root, output_suffix, ext)
+        
+            # Write output file.
             
-            for data_row in data_rows:
-                output_writer_csv.writerow(data_row)
+            with open(output_file, 'wb') as output_writer:
+                output_writer_csv = csv.writer(output_writer)
+                
+                output_writer_csv.writerow(header_row)
+                
+                for data_row in data_rows:
+                    output_writer_csv.writerow(data_row)
