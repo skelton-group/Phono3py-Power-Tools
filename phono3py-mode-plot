@@ -361,6 +361,12 @@ if __name__ == "__main__":
         )
 
     group.add_argument(
+        "--hist-norm-vmin",
+        type = float, default = None, dest = 'HistPlotNormVMin',
+        help = "Override the default vmin for logarithmic colour scales on histogram plots."
+        )
+
+    group.add_argument(
         "--mpl-default",
         action = 'store_false', dest = 'CustomiseMatplotlib',
         help = "Do not customise Matplotlib for plotting (use system defaults)"
@@ -399,6 +405,9 @@ if __name__ == "__main__":
 
     if args.ScatterPlotMarkerSize <= 0.0:
         raise Exception("Error: --scatter-marker-size must be > 0.")
+
+    if args.HistPlotNormVMin <= 0.0:
+        raise Exception("Error: --hist-norm-vmin must be > 0.")
 
     # Process arguments.
 
@@ -603,7 +612,10 @@ if __name__ == "__main__":
         # If using a logarithmic colour scale, zero bins need to be set to a small nominal value for the LogNorm() to work properly.
 
         if args.PlotCScale == 'log':
-            shift = hist_z[hist_z > 0.0].min() / 10.0
+            shift = args.HistPlotNormVMin
+
+            if shift is None:
+                shift = hist_z[hist_z > 0.0].min() / 10.0
 
             hist_z += shift
 
