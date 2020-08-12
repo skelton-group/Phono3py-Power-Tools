@@ -406,7 +406,7 @@ if __name__ == "__main__":
     if args.ScatterPlotMarkerSize <= 0.0:
         raise Exception("Error: --scatter-marker-size must be > 0.")
 
-    if args.HistPlotNormVMin <= 0.0:
+    if args.HistPlotNormVMin is not None and args.HistPlotNormVMin <= 0.0:
         raise Exception("Error: --hist-norm-vmin must be > 0.")
 
     # Process arguments.
