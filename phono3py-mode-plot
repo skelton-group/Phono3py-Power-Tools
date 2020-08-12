@@ -1,0 +1,793 @@
+#!/usr/bin/env python
+
+
+import math
+import os
+import warnings
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+from argparse import ArgumentParser
+
+from matplotlib.colors import LogNorm
+
+from Phono3pyPowerTools.Matplotlib import (
+    InitialiseMatplotlib,
+    HSBColourToRGB,
+    GetDefaultAxisLimits,
+    FormatToMinDP, FormatToStandardForm,
+    GetFixedPointFormatter, GetLogFormatter
+    )
+
+from Phono3pyPowerTools.Phono3pyIO import Phono3pyKappaHDF5
+
+
+# ----------------
+# Argument Parsing
+# ----------------
+
+def _ParsePlotRange(plot_range):
+    """ Parse a plot range specified as a \"min max\" or \"min max step\" string. """
+
+    plot_min, plot_max, plot_step = None, None, None
+
+    if plot_range is not None:
+        plot_range = [
+            float(val) for val in plot_range.strip().split()
+            ]
+
+        # 2 values: interpret as min + max.
+        # 3 values: interpret as min, max + step.
+        # Anything else: raise an Exception.
+
+        if len(plot_range) == 2:
+            plot_min, plot_max = plot_range
+        elif len(plot_range) == 3:
+            plot_min, plot_max, plot_step = plot_range
+        else:
+            raise Exception("Error: Plot ranges must be specified as \"min max\" or \"min max step\" values.")
+
+    return (plot_min, plot_max, plot_step)
+
+
+# ------------
+# I/O Routines
+# ------------
+
+""" Lookup table of lambda functions for extracting modal quantities from Phono3pyKappaHDF5 objects. """
+
+_GetDataFuncLUT = {
+    'freq'  : lambda f, t, rta : f.GetModeFreqs(),
+    'kappa' : lambda f, t, rta : f.GetModeKappaAve(t, lbte_rta = rta),
+    'cv'    : lambda f, t, rta : f.GetModeCV(t),
+    'gv'    : lambda f, t, rta : f.GetModeGVNorm(),
+    'gamma' : lambda f, t, rta : f.GetModeGamma(t),
+    'tau'   : lambda f, t, rta : f.GetModeTau(t),
+    'mfp'   : lambda f, t, rta : f.GetModeMFPNorm(t),
+    'pp'    : lambda f, t, rta : f.GetModePQJ()
+    }
+
+
+# -----------
+# Axis Labels
+# -----------
+
+""" Lookup table of symbols for modal quantities. """
+
+_SymbolsLUT = {
+    'freq'  : r"$\nu_\lambda$",
+    'kappa' : r"$\overline{\kappa}_\lambda$",
+    'cv'    : r"$C_\lambda$",
+    'gv'    : r"$|\mathbf{v}_\lambda|$",
+    'gamma' : r"$\Gamma_\lambda$",
+    'tau'   : r"$\tau_\lambda$",
+    'mfp'   : r"$|\mathbf{\Lambda}_\lambda|$",
+    'pp'    : r"$P_\lambda$"
+    }
+
+""" Lookup table of units of modal quantities. """
+
+_UnitsLUT = {
+    'freq'  : r"THz",
+    'kappa' : r"W m$^{-1}$ K$^{-1}$",
+    'cv'    : r"eV",
+    'gv'    : r"m s$^{-1}$",
+    'gamma' : r"THz",
+    'tau'   : r"ps",
+    'mfp'   : r"nm",
+    'pp'    : r"eV$^{2}$"
+    }
+
+def _BuildLabel(quantity, temp, scale):
+    """ Build an axis label for a modal quantity, optionally incorporating a temperature and scale factor. """
+
+    # This function returns a label in one of four configurations depending on the parameter set -s e.g.:
+    # \kappa [W/m.K]
+    # \kappa (T = 300 K) [W/m.K]
+    # \kappa [10^-2 W/m.K]
+    # \kappa (T = 300 K) [10^-2 W/m.K]
+
+    # Get the symbol for quantity from the lookup table.
+
+    p1 = _SymbolsLUT[quantity]
+
+    # If supplied, format temp using the formatting function.
+
+    if temp is not None:
+        p1 += ' ' + "($T$ = {0} K)".format(FormatToMinDP(temp, 3))
+
+    p2 = ""
+
+    # If supplied, format scale using the formatting function.
+
+    if scale is not None:
+        p2 += FormatToStandardForm(scale) + ' '
+
+    # Get the units for quantity from the lookup table.
+
+    p2 += _UnitsLUT[quantity]
+
+    return "{0} [{1}]".format(p1, p2)
+
+""" Lookup table of lambda functions for building axis labels. """
+
+_BuildLabelLUT = {
+    'freq'  : lambda t, s : _BuildLabel('freq' , None, s),
+    'kappa' : lambda t, s : _BuildLabel('kappa', t   , s),
+    'cv'    : lambda t, s : _BuildLabel('cv'   , t   , s),
+    'gv'    : lambda t, s : _BuildLabel('gv'   , None, s),
+    'gamma' : lambda t, s : _BuildLabel('gamma', t   , s),
+    'tau'   : lambda t, s : _BuildLabel('tau'  , t   , s),
+    'mfp'   : lambda t, s : _BuildLabel('mfp'  , t   , s),
+    'pp'    : lambda t, s : _BuildLabel('pp'   , None, s)
+    }
+
+
+# --------------------
+# Axis Scales + Ranges
+# --------------------
+
+""" List of modal quantities plotted on a log scale by default. """
+
+_DefaultLogAxes = ['kappa', 'gv', 'gamma', 'tau', 'mfp', 'pp']
+
+""" Lookup table of scale factors used when plotting modal quantities on a linear scale. """
+
+_LinearScaleLUT = {
+    'freq'  : None   ,
+    'kappa' : 1.0e-2 ,
+    'cv'    : 1.0e-5 ,
+    'gv'    : 1.0e3  ,
+    'gamma' : None   ,
+    'tau'   : None   ,
+    'mfp'   : None   ,
+    'pp'    : 1.0e-10
+    }
+
+
+# -----------------------
+# Other Plotting Routines
+# -----------------------
+
+""" Lookup table mapping "colour by band" schemes to a (base, range) pair of hue values. """
+
+_ColourByBandSchemeLUT = {
+    'fire' : (240.0, 150.0),
+    'ice'  : (240.0, -60.0)
+    }
+
+def _GetMarkerColours(num_qpoints, num_bands, scheme):
+    """ Generate a 2D array of marker colours for (num_qpoints x num_bands) modes based on the specified colour scheme. """
+
+    h_min, h_rng = _ColourByBandSchemeLUT[scheme]
+
+    angle_inc = h_rng / (num_bands - 1)
+
+    colours = [
+        HSBColourToRGB(h_min + i * angle_inc, 1.0, 1.0)
+            for i in range(0, num_bands)
+        ]
+
+    return np.array(
+        [colours] * num_qpoints, dtype = np.float64
+        )
+
+
+# ----
+# Main
+# ----
+
+if __name__ == "__main__":
+    # Command-line arguments.
+
+    parser = ArgumentParser(
+        description = "Generate scatter plots or histograms of modal quantities output in Phono3py kappa-m*.hdf5 files"
+        )
+
+    parser.add_argument(
+        metavar = "input_file",
+        dest = "InputFile",
+        help = "Phono3py kappa-m*.hdf5 file to take data from"
+        )
+
+    parser.add_argument(
+        "-o", "--output-file",
+        metavar = "output_file",
+        dest = "OutputFile",
+        help = "Output file (default: kappa-mNNN.hdf5 -> kappa-mNNN.png)"
+        )
+
+    group = parser.add_argument_group(
+        title = "Data selection"
+        )
+
+    group.add_argument(
+        "--plot-x",
+        choices = ['freq', 'kappa', 'cv', 'gv', 'gamma', 'tau', 'mfp', 'pp'],
+        default = 'freq', dest = 'PlotX',
+        help = "Modal quantity to plot on x-axis (default: 'freq')"
+        )
+
+    group.add_argument(
+        "--plot-y",
+        choices = ['freq', 'kappa', 'cv', 'gv', 'gamma', 'tau', 'mfp', 'pp'],
+        default = 'kappa', dest = 'PlotY',
+        help = "Modal quantity to plot on y-axis (default: 'kappa')"
+        )
+
+    group.add_argument(
+        "--plot-c",
+        choices = ['freq', 'kappa', 'cv', 'gv', 'gamma', 'tau', 'mfp', 'pp'],
+        default = None, dest = 'PlotC',
+        help = "Optionally use a modal quantity as a weight in histogram plots"
+        )
+
+    group.add_argument(
+        "--temp",
+        metavar = "temperature",
+        type = float, default = 300.0, dest = 'Temperature',
+        help = "Temperature for T-dependent modal quantities (default: 300 K)"
+        )
+
+    group.add_argument(
+        "--lbte-rta",
+        action = 'store_true', dest = "UseRTA",
+        help = "If using data from an LBTE calculation, take the RTA data instead (default: False)"
+        )
+
+    group.add_argument(
+        "--freq-cutoff",
+        metavar = "cutoff",
+        type = float, default = 1.0e-2, dest = 'FrequencyCutoff',
+        help = "Frequency cutoff used to mask data points (default: 1.0e-2)"
+        )
+
+    group = parser.add_argument_group(
+        title = "Plotting options"
+        )
+
+    group.add_argument(
+        "--hist",
+        action = 'store_true', dest = "PlotHist",
+        help = "Generate histogram plot"
+        )
+
+    group.add_argument(
+        "--x-range",
+        metavar = "\"min  max [step]\"",
+        dest = "PlotXRange",
+        help = "Set x-axis limits to a \"min max\" or \"min max step\" range (default: automatic; step is ignored if using a log scale)"
+        )
+
+    group.add_argument(
+        "--y-range",
+        metavar = "\"min  max [step]\"",
+        dest = "PlotYRange",
+        help = "Set y-axis limits to a \"min max\" or \"min max step\" range (default: automatic; step is ignored if using a log scale)"
+        )
+
+    group.add_argument(
+        "--x-scale",
+        choices = ['linear', 'log'],
+        dest = 'PlotXScale',
+        help = "Set the y-axis scale to linear or logarithmic (default: automatically selected)"
+        )
+
+    group.add_argument(
+        "--y-scale",
+        choices= ['linear', 'log'],
+        dest = 'PlotYScale',
+        help = "Set the y-axis scale to linear or logarithmic (default: automatically selected)"
+        )
+
+    group.add_argument(
+        "--c-scale",
+        choices = ['linear', 'log'], default = 'log',
+        dest = 'PlotCScale',
+        help = "Set the colour scale on histogram plots to linear or logarithmic (default: logarithmic)"
+        )
+
+    group.add_argument(
+        "--hist-res",
+        metavar = "num_bins",
+        type = int, default = 251, dest = "HistPlotNumBins",
+        help = "Resolution (number of bins) used to generate histogram plots (default: 251)"
+        )
+
+    group = parser.add_argument_group(
+        title = "Customisation"
+        )
+
+    group.add_argument(
+        "--scatter-marker",
+        metavar = "marker",
+        default = '^', dest = 'ScatterPlotMarker',
+        help = "Marker for scatter plots (default: '^' = triangles)"
+        )
+
+    group.add_argument(
+        "--scatter-colour-by-band",
+        choices = ['fire', 'ice'],
+        default = 'fire', dest = 'ScatterPlotColourByBand',
+        help = "Colour markers on scatter plots by band index (default: 'fire' scheme)"
+        )
+
+    group.add_argument(
+        "--scatter-marker-colour",
+        metavar = "colour",
+        dest = 'ScatterPlotColour',
+        help = "Set markers on scatter plots to a solid colour (overrides --colour-by-band; default: none)"
+        )
+
+    group.add_argument(
+        "--scatter-marker-size",
+        metavar = "size",
+        type = float, default = 16.0, dest = 'ScatterPlotMarkerSize',
+        help = "Size of markers for scatter plots (default: 16)"
+        )
+
+    group.add_argument(
+        "--hist-cmap",
+        metavar = "cmap",
+        default = 'hot', dest = 'HistPlotColourMap',
+        help = "Matplotlib colour map for histogram plots (default: 'hot' cmap)"
+        )
+
+    group.add_argument(
+        "--hist-no-cbar",
+        action = 'store_false', dest = "HistPlotColourBar",
+        help = "Do not add a colour bar to histogram plots"
+        )
+
+    group.add_argument(
+        "--mpl-default",
+        action = 'store_false', dest = 'CustomiseMatplotlib',
+        help = "Do not customise Matplotlib for plotting (use system defaults)"
+        )
+
+    args = parser.parse_args()
+
+    # Sanity checks.
+
+    if args.PlotX not in _GetDataFuncLUT:
+        raise Exception("Error: Unsupported option --plot-x='{0}'.".format(args.PlotX))
+
+    if args.PlotY not in _GetDataFuncLUT:
+        raise Exception("Error: Unsupported option --plot-y='{0}'.".format(args.PlotY))
+
+    if args.PlotC is not None and args.PlotC not in _GetDataFuncLUT:
+        raise Exception("Error: Unsupported option --plot-c='{0}'.".format(args.PlotC))
+
+    if args.Temperature <= 0.0:
+        raise Exception("Error: --temp must be set to a value >= 0.")
+
+    if args.PlotXScale is not None and args.PlotXScale not in ['linear', 'log']:
+        raise Exception("Error: Unsupported option --plot-x-scale='{0}'.",format(args.PlotXScale))
+
+    if args.PlotYScale is not None and args.PlotYScale not in ['linear', 'log']:
+        raise Exception("Error: Unsupported option --plot-y-scale='{0}'.",format(args.PlotYScale))
+
+    if args.PlotCScale not in ['linear', 'log']:
+        raise Exception("Error: Unsupported option --plot-c-scale='{0}'.",format(args.PlotCScale))
+
+    if args.HistPlotNumBins <= 0:
+        raise Exception("Error: --hist-res must be set to a number > 0.")
+
+    if args.ScatterPlotColourByBand not in _ColourByBandSchemeLUT:
+        raise Exception("Error: Unsupported option --colour-by-band='{0}'.".format(args.PlotColourByBand))
+
+    if args.ScatterPlotMarkerSize <= 0.0:
+        raise Exception("Error: --scatter-marker-size must be > 0.")
+
+    # Process arguments.
+
+    args.PlotXRange = _ParsePlotRange(args.PlotXRange)
+    args.PlotYRange = _ParsePlotRange(args.PlotYRange)
+
+    if args.PlotXScale is None:
+        args.PlotXScale = 'log' if args.PlotX in _DefaultLogAxes else 'linear'
+
+    if args.PlotYScale is None:
+        args.PlotYScale = 'log' if args.PlotY in _DefaultLogAxes else 'linear'
+
+    if args.OutputFile is None:
+        # Generate a name for the output file based on the input file.
+
+        _, tail = os.path.split(args.InputFile)
+        root, _ = os.path.splitext(tail)
+
+        args.OutputFile = "{0}.png".format(root)
+
+    # Read data from input file.
+
+    freqs = None
+
+    plot_x, plot_y = None, None
+    plot_c = None
+
+    with Phono3pyKappaHDF5(args.InputFile) as kappa_hdf5:
+        freqs = kappa_hdf5.GetModeFreqs()
+
+        plot_x = _GetDataFuncLUT[args.PlotX](kappa_hdf5, args.Temperature, args.UseRTA).ravel()
+        plot_y = _GetDataFuncLUT[args.PlotY](kappa_hdf5, args.Temperature, args.UseRTA).ravel()
+
+        if args.PlotHist:
+            # If the --plot-c was set, read the corresponding modal quantity from the input file.
+            # If not, use the q-point weights.
+
+            if args.PlotC is not None:
+                plot_c = _GetDataFuncLUT[args.PlotC](kappa_hdf5, args.Temperature, args.UseRTA)
+            else:
+                plot_c = np.repeat(
+                    kappa_hdf5.GetQPointWeights().reshape(kappa_hdf5.NumQPts, 1),
+                    kappa_hdf5.NumBands, axis = 1
+                    )
+
+            plot_c = plot_c.ravel()
+
+    # Prepare plot parameters.
+
+    # Generate a "mask" to exclude spurious data from the plots.
+    # By default, Phono3py uses a small frequency cutoff to exclude acoustic/imaginary modes from calculations.
+    # If using log scales for x, y or c, values <= 0 can cause the program to crash and should also be excluded.
+    # In most cases, the frequency cutoff should mask these values, so if additional masking excludes further data points, a RuntimeWatning is issued.
+
+    data_mask = (freqs > args.FrequencyCutoff).ravel()
+
+    num_mask_1 = len(data_mask) - sum(data_mask)
+
+    if args.PlotXScale == 'log':
+        data_mask = np.logical_and(
+            data_mask, plot_x > 0.0
+            )
+
+    if args.PlotYScale == 'log':
+        data_mask = np.logical_and(
+            data_mask, plot_y > 0.0
+            )
+
+    if args.PlotHist and args.PlotCScale == 'log':
+        data_mask = np.logical_and(
+            data_mask, plot_c > 0.0
+            )
+
+    num_mask_2 = len(data_mask) - sum(data_mask)
+
+    if num_mask_2 > num_mask_1:
+        warnings.warn(
+            "An additional {0} data points with values <= 0 were masked.".format(num_mask_2 - num_mask_1), RuntimeWarning
+            )
+
+    # If using a linear scale for x or y, scale the data if required.
+
+    x_scale_factor = _LinearScaleLUT[args.PlotX] if args.PlotXScale == 'linear' else None
+    y_scale_factor = _LinearScaleLUT[args.PlotY] if args.PlotYScale == 'linear' else None
+
+    if x_scale_factor is not None:
+        plot_x /= x_scale_factor
+
+    if y_scale_factor is not None:
+        plot_y /= y_scale_factor
+
+    # Set axis ranges if not specified by the user.
+    # If plotting x or y on a log scale, the Matplotlib defaults are usually inappropriate and are overridden.
+    # If generating a histogram plot, the axis ranges are needed to bin the histogram, so in this case we also generate suitable defaults for linear axes.
+
+    x_min, x_max, x_step = args.PlotXRange
+
+    if args.PlotXScale == 'log':
+        x_min, x_max = GetDefaultAxisLimits(
+            x_min, x_max, plot_x[data_mask], log_scale = True
+            )
+    else:
+        if args.PlotHist:
+            x_min, x_max = GetDefaultAxisLimits(
+                x_min, x_max, plot_x[data_mask], log_scale = False
+                )
+
+    y_min, y_max, y_step = args.PlotYRange
+
+    if args.PlotYScale == 'log':
+        y_min, y_max = GetDefaultAxisLimits(
+            y_min, y_max, plot_y[data_mask], log_scale = True
+            )
+    else:
+        if args.PlotHist:
+            y_min, y_max = GetDefaultAxisLimits(
+                y_min, y_max, plot_y[data_mask], log_scale = False
+                )
+
+    # Generate labels for the x and y axes.
+    # If generating a histogram plot with a colour bar, a label may also be needed for the c axis.
+
+    x_label = _BuildLabelLUT[args.PlotX](args.Temperature, x_scale_factor)
+    y_label = _BuildLabelLUT[args.PlotY](args.Temperature, y_scale_factor)
+
+    c_label = None
+
+    if args.PlotHist and args.HistPlotColourBar:
+        if args.PlotC is not None:
+            c_scale_factor = _LinearScaleLUT[args.PlotC] if args.PlotCScale == 'linear' else None
+
+            if c_scale_factor is not None:
+                plot_c /= c_scale_factor
+
+            c_label = _BuildLabelLUT[args.PlotC](args.Temperature, c_scale_factor)
+        else:
+            c_label = r"Density"
+
+    # Initialise Matplotlib if required.
+
+    if args.CustomiseMatplotlib:
+        InitialiseMatplotlib()
+
+    # Generates plots.
+
+    if args.PlotHist:
+        # Create a histogram plot.
+
+        # Mask x, y and c data to remove data for very low frequency modes.
+
+        plot_x = plot_x[data_mask]
+        plot_y = plot_y[data_mask]
+        plot_c = plot_c[data_mask]
+
+        # Convert x values and x-axis limits to log values.
+
+        if args.PlotXScale == 'log':
+            plot_x = np.log10(plot_x)
+
+            if x_min is not None: x_min = math.log10(x_min)
+            if x_max is not None: x_max = math.log10(x_max)
+
+        if args.PlotYScale == 'log':
+            plot_y = np.log10(plot_y)
+
+            if y_min is not None: y_min = math.log10(y_min)
+            if y_max is not None: y_max = math.log10(y_max)
+
+        # Bin histogram.
+
+        hist_z, hist_x, hist_y = np.histogram2d(
+            plot_x, plot_y, bins = args.HistPlotNumBins,
+            range = [[x_min, x_max], [y_min, y_max]],
+            weights = plot_c
+            )
+
+        # Create figure.
+
+        fig_size = None
+
+        if args.CustomiseMatplotlib:
+            # Override default figure size.
+
+            if args.HistPlotColourBar:
+                fig_size = (10.5 / 2.54, 7.0 / 2.54)
+            else:
+                fig_size = (8.6 / 2.54, 7.0 / 2.54)
+
+        # Workaround for a "RuntimeError: Invalid DISPLAY variable" Exception when using a "headless" QT backend.
+        # https://stackoverflow.com/questions/35737116/runtimeerror-invalid-display-variable
+
+        try:
+            plt.figure(figsize = fig_size)
+        except RuntimeError:
+            plt.switch_backend('agg')
+            plt.figure(figsize = fig_size)
+
+        # Plot data.
+
+        norm = None
+
+        # If using a logarithmic colour scale, zero bins need to be set to a small nominal value for the LogNorm() to work properly.
+
+        if args.PlotCScale == 'log':
+            shift = hist_z[hist_z > 0.0].min() / 10.0
+
+            hist_z += shift
+
+            norm = LogNorm(
+                vmin = shift
+                )
+
+        # Draw histogram.
+
+        plt.pcolor(
+            hist_x, hist_y, hist_z.T,
+            cmap = args.HistPlotColourMap, norm = norm
+            )
+
+        # Add a colour bar if required.
+
+        if args.HistPlotColourBar:
+            colour_bar = plt.colorbar()
+            colour_bar.set_label(c_label)
+
+        # Set axis ticks.
+
+        # The code repetition here _could_ be condensed into a loop, but doing so apparently involves using "discouraged" parts of the Matplotlib API.
+
+        if args.PlotXScale == 'log':
+            x_ticks, _ = plt.xticks()
+
+            plt.xticks(
+                [val for val in x_ticks if val % 1.0 == 0.0]
+                )
+
+            plt.xlim(x_min, x_max)
+
+            plt.gca().xaxis.set_major_formatter(
+                GetLogFormatter()
+                )
+
+        if args.PlotYScale == 'log':
+            y_ticks, _ = plt.yticks()
+
+            plt.yticks(
+                [val for val in y_ticks if val % 1.0 == 0.0]
+                )
+
+            plt.ylim(y_min, y_max)
+
+            plt.gca().yaxis.set_major_formatter(
+                GetLogFormatter()
+                )
+
+        if args.PlotXScale == 'linear':
+            _, axis_max = plt.xlim()
+
+            if axis_max < 10.0:
+                plt.gca().xaxis.set_major_formatter(
+                    GetFixedPointFormatter(num_dp = 1)
+                    )
+
+        if args.PlotYScale == 'linear':
+            _, axis_max = plt.ylim()
+
+            if axis_max < 10.0:
+                plt.gca().yaxis.set_major_formatter(
+                    GetFixedPointFormatter(num_dp = 1)
+                    )
+
+        # Set axis labels.
+
+        plt.xlabel(x_label)
+        plt.ylabel(y_label)
+
+        # Make axis border and tick marks red (suits _most_ cmaps better than black).
+
+        for spine in plt.gca().spines.values():
+            spine.set_color('r')
+
+        plt.gca().tick_params(color = 'r')
+
+        # Standard Matplotlib "witchcraft".
+
+        plt.tight_layout()
+
+        # Save and close.
+
+        plt.savefig(
+            args.OutputFile, dpi = 300
+            )
+
+        plt.close()
+
+    else:
+        # Create a scatter plot.
+
+        fig_size = None
+
+        if args.CustomiseMatplotlib:
+            # Override default figure size.
+
+            fig_size = (8.6 / 2.54, 7.0 / 2.54)
+
+        # Workaround for a RuntimeError when using "headless" QT backends.
+
+        try:
+            plt.figure(figsize = fig_size)
+        except RuntimeError:
+            plt.switch_backend('agg')
+            plt.figure(figsize = fig_size)
+
+        # Plot data.
+
+        # If a marker colour is set using the --plot-colour option, use that.
+        # If not, colour markers by band index according to the colour scheme selected using the --colour-by-band option.
+
+        marker_colour = args.ScatterPlotColour
+
+        if marker_colour is None:
+            num_qpoints, num_bands = freqs.shape
+
+            marker_colour = _GetMarkerColours(
+                num_qpoints, num_bands, args.ScatterPlotColourByBand
+                )
+
+            marker_colour = marker_colour.reshape(num_qpoints * num_bands, 3)[data_mask]
+
+        # Draw scatter plot.
+
+        plt.scatter(
+            plot_x[data_mask], plot_y[data_mask],
+            marker = args.ScatterPlotMarker, s = args.ScatterPlotMarkerSize, facecolor = marker_colour, edgecolor = 'k'
+            )
+
+        # Set axis scales.
+
+        if args.PlotXScale == 'log':
+            plt.xscale('log')
+
+        if args.PlotYScale == 'log':
+            plt.yscale('log')
+
+        # Set axis limits and ticks.
+
+        plt.xlim(x_min, x_max)
+
+        if args.PlotXScale == 'linear':
+            if x_step is not None:
+                plt.xticks(
+                    np.arange(x_min, x_max + x_step / 10.0, x_step)
+                    )
+
+            _, axis_max = plt.xlim()
+
+            if axis_max < 10.0:
+                plt.gca().xaxis.set_major_formatter(
+                    GetFixedPointFormatter(num_dp = 1)
+                    )
+
+        plt.ylim(y_min, y_max)
+
+        if args.PlotYScale == 'linear':
+            if y_step is not None:
+                plt.yticks(
+                    np.arange(y_min, y_max + y_step / 10.0, y_step)
+                    )
+
+            _, axis_max = plt.ylim()
+
+            if axis_max < 10.0:
+                plt.gca().yaxis.set_major_formatter(
+                    GetFixedPointFormatter(num_dp = 1)
+                    )
+
+        # Set axis labels.
+
+        plt.xlabel(x_label)
+        plt.ylabel(y_label)
+
+        # "Witchcraft".
+
+        plt.tight_layout()
+
+        # Save and close.
+
+        plt.savefig(
+            args.OutputFile, dpi = 300
+            )
+
+        plt.close()

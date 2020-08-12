@@ -49,6 +49,16 @@ def ParseFracVal(val):
         
         return float(val)
 
+def ParseMultiplier(val):
+    """ Parse repeated values entered as strings of the form 'N*X'. """
+    
+    if '*' in val:
+        rep_cnt, rep_val = val.split('*')
+        
+        return " ".join([rep_val] * int(rep_cnt))
+    else:
+        return val
+
 
 # ----
 # Main
@@ -90,7 +100,15 @@ if __name__ == "__main__":
     
     # Process list of atomic symbols/masses.
 
-    site_atoms_str = " ".join(args.SiteAtomsList)
+    site_atoms_str = None
+    
+    for val in args.SiteAtomsList:
+        val = ParseMultiplier(val)
+        
+        if site_atoms_str is None:
+            site_atoms_str = val
+        else:
+            site_atoms_str += " " + val
     
     site_atoms_sets = None
     

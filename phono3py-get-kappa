@@ -8,11 +8,11 @@
 import csv
 import os
 
-import h5py
-
 import numpy as np
 
 from argparse import ArgumentParser
+
+from Phono3pyPowerTools.Phono3pyIO import Phono3pyKappaHDF5
 
 
 # ----
@@ -21,51 +21,50 @@ from argparse import ArgumentParser
 
 if __name__ == "__main__":
     # Command-line arguments.
-    
+
     parser = ArgumentParser(
         description = "Get k_latt(T) from Phono3py kappa-*.hdf5 files and save to CSV"
         )
-    
+
     parser.add_argument(
         metavar = "input_file",
         nargs = '+', dest = 'InputFiles',
         help = "Phono3py kappa-*.hdf5 files to read"
         )
-    
+
     parser.add_argument(
         "-o", "--output-file",
         metavar = "output_file",
         dest = "OutputFile",
         help = "Output file to write (single input file only)"
         )
-    
+
     args = parser.parse_args()
-    
+
     # Sanity check.
-    
+
     if args.OutputFile is not None and len(args.InputFiles) > 1:
         raise Exception("Error: The -o/--output-file option can only be used when one input file is specified.")
-    
+
     # Loop over input files.
-    
+
     for input_file in args.InputFiles:
         # Read input file.
-        
-        t_arr = None
-        k_arr_rta, k_arr_lbte = None, None
-        
-        with h5py.File(input_file, 'r') as f:
-            t_arr = f['temperature'][:]
-            
-            try:
-                # Assume LBTE calculation.
-                
-                k_arr_rta = f['kappa_RTA'][:]
-                k_arr_lbte = f['kappa'][:]
-            except KeyError:
-                # If the kappa_rta key is not present, assume an RTA calculation.
-                
-                k_arr_rta = f['kappa'][:]
+
+        kappa_hdf5 = Phono3pyKappaHDF5(input_file)
+
+        temps = kappa_hdf5.GetTemperature()
+
+        kappa_rta, kappa_lbte = None, None
+
+        if kappa_hdf5.IsLBTE:
+            kappa_rta = kappa_hdf5.GetKappa(
+                lbte_rta = True
+                )
+
+            kappa_lbte = kappa_hdf5.GetKappa()
+        else:
+            kappa_rta = kappa_hdf5.GetKappa()
 
         # Prepare output data.
 
@@ -75,57 +74,57 @@ if __name__ == "__main__":
             "k_yz [W/m.K]", "k_xz [W/m.K]", "k_xy [W/m.K]",
             "k_iso [W/m.K]"
             ]
-        
+
         output_data = None
-        
-        if k_arr_lbte is not None:
+
+        if kappa_lbte is not None:
             # LBTE calculation -> output LBTE + RTA as two separate sets of data.
-            
+
             output_data = [
-                (t_arr, k_arr_rta , "RTA" ),
-                (t_arr, k_arr_lbte, "LBTE")
+                (temps, kappa_rta , "RTA" ),
+                (temps, kappa_lbte, "LBTE")
                 ]
         else:
             # RTA calculation -> output one set of data.
-            
+
             output_data = [
-                (t_arr, k_arr_rta, None)
+                (temps, kappa_rta, None)
                 ]
-        
-        for t_arr_out, k_arr_out, output_suffix in output_data:
+
+        for temps_out, kappa_out, output_suffix in output_data:
             data_rows = []
-            
-            for t, k in zip(t_arr_out, k_arr_out):
+
+            for t, k in zip(temps_out, kappa_out):
                 k_iso = np.mean(k[:3])
-                
+
                 data_rows.append(
                     [t] + [k_ab for k_ab in k] + [k_iso]
                     )
-            
+
             # Name for output file.
-            
+
             output_file = args.OutputFile
-        
+
             if output_file is None:
                 # Generate an output file name based on the input file:
                 #   kappa-m*.hdf5 --> kappa-m*.csv
-                
+
                 _, tail = os.path.split(input_file)
                 root, _ = os.path.splitext(tail)
-                
+
                 output_file = r"{0}.csv".format(root)
-            
+
             if output_suffix is not None:
                 root, ext = os.path.splitext(output_file)
-                
+
                 output_file = "{0}.{1}{2}".format(root, output_suffix, ext)
-        
+
             # Write output file.
-            
+
             with open(output_file, 'wb') as output_writer:
                 output_writer_csv = csv.writer(output_writer)
-                
+
                 output_writer_csv.writerow(header_row)
-                
+
                 for data_row in data_rows:
                     output_writer_csv.writerow(data_row)
