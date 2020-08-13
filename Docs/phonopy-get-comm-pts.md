@@ -5,20 +5,6 @@
 The commensurate **q**-points are those for which the phonon frequencies can be evaluated exactly.
 
 
-
-## Installation and requirements
-
-No installation is necessary.
-For ease of use on Unix(-like) systems, you may wish to add the scripts folder to your `$PATH` variable - e.g.:
-
-```bash
-export PATH=${PATH}:/mnt/d/Repositories/Phono3py-Tools
-```
-
-`phonopy-get-comm-pts` uses routines from Phonopy and therefore requires the `phonopy` Python library to be installed.
-
-
-
 ## Usage example
 
 As an example we will use the rocksalt (NaCl) structure bundled with the Phonopy examples:

@@ -9,18 +9,6 @@ The CSV format is very simple and easily read by most analysis and visualisation
 (For an example of how to read and plot the data in Python, see below.)
 
 
-## Installation and requirements
-
-No installation is necessary.
-For ease of use on Unix(-like) systems, you may wish to add the scripts folder to your `$PATH` variable - e.g.:
-
-```bash
-export PATH=${PATH}:/mnt/d/Repositories/Phono3py-Power-Tools
-```
-
-`phono3py-get-kappa` requires the [NumPy](https://numpy.org) and [H5py package](https://www.h5py.org), which are also used by Phono(3)py.
-
-
 ## Usage examples
 
 To extract data from a Phono3py HDF5 file, run the script with the file path - e.g.:
@@ -150,4 +138,4 @@ plt.savefig(
     )
 ```
 
-<img src="Resources/phono3py-get-kappa_ExamplePlot.png" alt="phono3py-get-kappa_ExamplePlot.png" width="500">
+<img src="Resources/phono3py-get-kappa_ExamplePlot.png" width="500">

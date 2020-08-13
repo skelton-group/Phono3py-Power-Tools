@@ -11,32 +11,21 @@ More details and formulae can be found in [Ref. 1](#Ref1).
 In Phono3py, the average mass at the atomic sites in the input structure can be set using the `--mass` command-line option or the corresponding `MASS` settings tag.
 For sites with *i* isotopes with fractional abundance <i>a<sub>i</sub></i> and mass <i>m<sub>i</sub></i> the average mass is calculated as:
 
-<img src="Resources/phono3py-isotopes_Equation1.png" alt="phono3py-isotopes_Equation1.png">
+<img src="Resources/phono3py-isotopes_Equation1.png">
 
 The natural mass variation at atomic sites due to the presence of isotopes with different masses can introduce additional "isotope scattering" and thus reduce <i>&kappa;</i><sub>latt</sub>.
 In Phono3py, isotope effects can be included using the model in [Ref. 2](#Ref2).
 The required parameter is the "mass variance" <i>m></i><sub>var</sub>, which is calculated using the formula:
 
-<img src="Resources/phono3py-isotopes_Equation2.png" alt="phono3py-isotopes_Equation2.png">
+<img src="Resources/phono3py-isotopes_Equation2.png">
 
 The mass variance at the atomic sites can be set using the `--mass-variances`/`--mv` command-line parameters or the corresponding `MASS_VARIANCES` tag.
-
-
-## Installation and requirements
-
-No installation is necessary, but you may wish to add the script folder to your `$PATH` variable - e.g.:
-
-```bash
-export PATH=${PATH}:/mnt/d/Repositories/Phono3py-Power-Tools
-```
-
-`phono3py-isotopes` reads isotope data from the Phonopy database, and therefore requires the `phonopy` Python library to be installed.
 
 
 ## Brief tutorial
 
 
-### a. Natural isotopic abundance <a name="Tutorial.A"></a>
+### a. Natural isotopic abundance
 
 To obtain the appropriate `--mass-variances` tag to input the natural isotopic mass variance into Phono3py, run `phono3py-isotopes` with the list of atoms in the crystal structure (in site order):
 
@@ -121,7 +110,7 @@ As expected, the last two commands give practically the same result.*
   </tr>
 </table>
 
-<img src="Resources/phono3py-isotopes_TutorialA.png" alt="phono3py-isotopes_TutorialA.png" width="750">
+<img src="Resources/phono3py-isotopes_TutorialA.png" width="750">
 
 \* The results are not _exactly_ the same.
 This is because Phonopy has two different databases - a list of average masses, and a higher-precision list of isotopic masses used to calculate mass variances when the `--isotope` flag is set.
@@ -129,7 +118,7 @@ This is because Phonopy has two different databases - a list of average masses, 
 In practice, the differences in the calculated <i>&kappa;</i><sub>latt</sub> are negligably small.
 
 
-### b. Site mass disorder <a name="Tutorial.B"></a>
+### b. Site mass disorder
 
 Suppose we replaced 1 % of the As with P.
 The effect of this doping/alloying on the thermal transport can be modelled approximately* by changing the average mass and mass variance at the anion site.
@@ -204,12 +193,12 @@ The doping changes the average mass as well as the mass variance, which will in 
   </tr>
 </table>
 
-<img src="Resources/phono3py-isotopes_TutorialB.png" alt="phono3py-isotopes_TutorialB.png" width="750">
+<img src="Resources/phono3py-isotopes_TutorialB.png" width="750">
 
-\* This procedure is approximate because it does not account for changes in the 2<sup>nd</sup>- and 3<sup>rd</sup>-order force constants due to differences in chemical bonding and/or changes in cell volume - more accurate predictions for homogeneous alloys might be obtained using a virtual crystal approximation (VCA) such as that implemented in [almaBTE](#Ref3).
+\* This procedure is approximate because it does not account for changes in the 2<sup>nd</sup>- and 3<sup>rd</sup>-order force constants due to differences in chemical bonding and/or changes in cell volume - more accurate predictions for homogeneous alloys might be obtained using a virtual crystal approximation (VCA) such as that implemented in almaBTE [Ref. 3](#Ref3).
 
 
-### c. Specific isotope ratios <a name="Tutorial.C"></a>
+### c. Specific isotope ratios
 
 The `--site-average` option can also be used to set up calculations for specific isotope ratios.
 
@@ -313,10 +302,10 @@ The pure <sup>71</sup>Ga composition is predicted to have a lower <i>&kappa;</i>
   <tr><td>  0</td><td>100</td><td>157.9</td><td>37.69</td></tr>
 </table>
 
-<img src="Resources/phono3py-isotopes_TutorialC.png" alt="phono3py-isotopes_TutorialC.png" width="750">
+<img src="Resources/phono3py-isotopes_TutorialC.png" width="750">
 
 
-### d. Automating parameter generation <a name="TutorialD"></a>
+### d. Automating parameter generation
 
 In the last example, the parameters for a set of 11 isotope ratios were collected by hand and input into a shell script to perform the Phono3py calculations.
 This way of doing things is probably OK for a one off, but it will quickly become tedious for larger problems.

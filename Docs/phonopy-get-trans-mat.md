@@ -1,19 +1,6 @@
 # phonopy-get-trans-mat
 
-
 `phonopy-get-trans-mat` compares two VASP POSCAR files specifying conventional and primitive cells and calculates the transformation matrix to map between them.
-
-
-## Installation and requirements
-
-No installation is necessary.
-For ease of use on Unix(-like) systems, you may wish to add the scripts folder to your `$PATH` variable - e.g.:
-
-```bash
-export PATH=${PATH}:/mnt/d/Repositories/Phono3py-Power-Tools
-```
-
-`phonopy-get-trans-mat` requires the [NumPy](https://numpy.org) package.
 
 
 ## Usage example
