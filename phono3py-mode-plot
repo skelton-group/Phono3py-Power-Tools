@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 
 
+# -------
+# Imports
+# -------
+
 import math
 import os
 import warnings
@@ -362,6 +366,7 @@ if __name__ == "__main__":
 
     group.add_argument(
         "--hist-norm-vmin",
+        metavar = "vmin",
         type = float, default = None, dest = 'HistPlotNormVMin',
         help = "Override the default vmin for logarithmic colour scales on histogram plots."
         )
