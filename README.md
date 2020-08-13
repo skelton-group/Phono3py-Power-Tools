@@ -34,7 +34,7 @@ $ git clone https://github.com/skelton-group/Phono3py-Power-Tools
 
 Once done, make the command-line scripts executable:
 
-```
+```bash
 $ cd Phono3py-Power-Tools
 $ chmod +x phonopy-* phono3py-*
 ```
@@ -70,7 +70,7 @@ Aborting
 
 Presuming you do not have source code changes to commit, you can work around this error by `git stash`ing the "changes", deleting the "stashed" changes, and then running a `git pull`:
 
-```
+```bash
 $ git stash
 $ git stash clear
 $ git pull
