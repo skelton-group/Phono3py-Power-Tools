@@ -412,7 +412,7 @@ if __name__ == "__main__":
         raise Exception("Error: --hist-res must be set to a number > 0.")
 
     if args.ScatterPlotColourByBand not in _ColourByBandSchemeLUT:
-        raise Exception("Error: Unsupported option --colour-by-band='{0}'.".format(args.PlotColourByBand))
+        raise Exception("Error: Unsupported option --colour-by-band='{0}'.".format(args.ScatterPlotColourByBand))
 
     if args.ScatterPlotMarkerSize <= 0.0:
         raise Exception("Error: --scatter-marker-size must be > 0.")
