@@ -355,12 +355,14 @@ $ phono3py-mode-plot kappa-m161616.hdf5 -o SnSe-Kappa.jpg
 You may see warnings similar to either or both of the following while running the script - provided the data in the input file is "sane" these should not affect the output and can be safely ignored:
 
 ```
-/Volumes/Data/Repositories/Phono3py-Power-Tools/phono3py-mode-plot:492: RuntimeWarning: An additional 21 data points with values <= 0 were masked.
+/Volumes/Data/Repositories/Phono3py-Power-Tools/phono3py-mode-plot:492:
+ RuntimeWarning: An additional 21 data points with values <= 0 were masked.
   "An additional {0} data points with values <= 0 were masked.".format(num_mask_2 - num_mask_1), RuntimeWarning
 ```
 
 ```
-/Volumes/Data/Repositories/Phono3py-Power-Tools/Phono3pyPowerTools/Phono3pyIO.py:246: RuntimeWarning: divide by zero encountered in divide
+/Volumes/Data/Repositories/Phono3py-Power-Tools/Phono3pyPowerTools/Phono3pyIO.py:246:
+ RuntimeWarning: divide by zero encountered in divide
   mode_gamma > 0.0, 1.0 / (2.0 * 2.0 * math.pi * mode_gamma), 0.0
 ```
 
