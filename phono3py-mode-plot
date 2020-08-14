@@ -396,7 +396,7 @@ if __name__ == "__main__":
     if args.PlotC is not None and args.PlotC not in _GetDataFuncLUT:
         raise Exception("Error: Unsupported option --plot-c='{0}'.".format(args.PlotC))
 
-    if args.Temperature <= 0.0:
+    if args.Temperature < 0.0:
         raise Exception("Error: --temp must be set to a value >= 0.")
 
     if args.PlotXScale is not None and args.PlotXScale not in ['linear', 'log']:
@@ -567,7 +567,7 @@ if __name__ == "__main__":
     if args.CustomiseMatplotlib:
         InitialiseMatplotlib()
 
-    # Generates plots.
+    # Generate plots.
 
     if args.PlotHist:
         # Create a histogram plot.
@@ -721,10 +721,17 @@ if __name__ == "__main__":
 
         # Save and close.
 
-        plt.savefig(
-            args.OutputFile, dpi = 300
-            )
+        dpi = None
 
+        if args.CustomiseMatplotlib:
+            # Override default output resolution.
+
+            dpi = 300
+
+        plt.savefig(
+            args.OutputFile, dpi = dpi
+            )
+        
         plt.close()
 
     else:
@@ -819,8 +826,15 @@ if __name__ == "__main__":
 
         # Save and close.
 
+        dpi = None
+
+        if args.CustomiseMatplotlib:
+            # Override default output resolution.
+
+            dpi = 300
+
         plt.savefig(
-            args.OutputFile, dpi = 300
+            args.OutputFile, dpi = dpi
             )
 
         plt.close()
