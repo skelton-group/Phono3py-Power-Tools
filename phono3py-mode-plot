@@ -31,28 +31,34 @@ from Phono3pyPowerTools.Phono3pyIO import Phono3pyKappaHDF5
 # Argument Parsing
 # ----------------
 
-def _ParsePlotRange(plot_range):
-    """ Parse a plot range specified as a \"min max\" or \"min max step\" string. """
+def _ParseMultivalueString(val_str, min_vals, max_vals):
+    """ Parse a string containing between min_vals and max_vals values in the format \"val_1 val_2 ... val_n\" and return a tuple of max_vals values with unset values replaced by None. """
 
-    plot_min, plot_max, plot_step = None, None, None
+    if min_vals < 0:
+        raise Exception("Error: min_vals cannot be negative.")
 
-    if plot_range is not None:
-        plot_range = [
-            float(val) for val in plot_range.strip().split()
+    if max_vals < 0:
+        raise Exception("Error: max_vals cannot be negative.")
+
+    val_list = [
+        None for _ in range(max_vals)
+        ]
+
+    if val_str is not None:
+        str_vals = [
+            float(val) for val in val_str.strip().split()
             ]
 
-        # 2 values: interpret as min + max.
-        # 3 values: interpret as min, max + step.
-        # Anything else: raise an Exception.
+        if len(str_vals) < min_vals:
+            raise Exception("Error: val_str specifies fewer than min_vals values.")
 
-        if len(plot_range) == 2:
-            plot_min, plot_max = plot_range
-        elif len(plot_range) == 3:
-            plot_min, plot_max, plot_step = plot_range
+        if len(str_vals) <= max_vals:
+            for i, val in enumerate(str_vals):
+                val_list[i] = val
         else:
-            raise Exception("Error: Plot ranges must be specified as \"min max\" or \"min max step\" values.")
+            raise Exception("Error: val_str specifies more than max_vals values.")
 
-    return (plot_min, plot_max, plot_step)
+    return tuple(val_list)
 
 
 # ------------
@@ -365,10 +371,10 @@ if __name__ == "__main__":
         )
 
     group.add_argument(
-        "--hist-norm-vmin",
-        metavar = "vmin",
-        type = float, default = None, dest = 'HistPlotNormVMin',
-        help = "Override the default vmin for logarithmic colour scales on histogram plots."
+        "--hist-norm",
+        metavar = "\"vmin [vmax]\"",
+        default = None, dest = 'HistPlotNorm',
+        help = "Set the range of values used to colour histogram plots by specifying a \"vmin\" value or \"vmin vmax\" pair."
         )
 
     group.add_argument(
@@ -411,19 +417,7 @@ if __name__ == "__main__":
     if args.ScatterPlotMarkerSize <= 0.0:
         raise Exception("Error: --scatter-marker-size must be > 0.")
 
-    if args.HistPlotNormVMin is not None and args.HistPlotNormVMin <= 0.0:
-        raise Exception("Error: --hist-norm-vmin must be > 0.")
-
     # Process arguments.
-
-    args.PlotXRange = _ParsePlotRange(args.PlotXRange)
-    args.PlotYRange = _ParsePlotRange(args.PlotYRange)
-
-    if args.PlotXScale is None:
-        args.PlotXScale = 'log' if args.PlotX in _DefaultLogAxes else 'linear'
-
-    if args.PlotYScale is None:
-        args.PlotYScale = 'log' if args.PlotY in _DefaultLogAxes else 'linear'
 
     if args.OutputFile is None:
         # Generate a name for the output file based on the input file.
@@ -432,6 +426,23 @@ if __name__ == "__main__":
         root, _ = os.path.splitext(tail)
 
         args.OutputFile = "{0}.png".format(root)
+
+    try:
+        args.PlotXRange = _ParseMultivalueString(args.PlotXRange, 2, 3)
+        args.PlotYRange = _ParseMultivalueString(args.PlotYRange, 2, 3)
+    except:
+        raise Exception("Error: Plot ranges must be specified as sets of \"min, max\" or \"min max step\" values.")
+
+    if args.PlotXScale is None:
+        args.PlotXScale = 'log' if args.PlotX in _DefaultLogAxes else 'linear'
+
+    if args.PlotYScale is None:
+        args.PlotYScale = 'log' if args.PlotY in _DefaultLogAxes else 'linear'
+
+    try:
+        args.HistPlotNorm = _ParseMultivalueString(args.HistPlotNorm, 1, 2)
+    except:
+        raise Exception("Error: Plot ranges must be specified as a \"vmin\" value or \"vmin vmax\" pair.")
 
     # Read data from input file.
 
@@ -612,27 +623,32 @@ if __name__ == "__main__":
 
         # Plot data.
 
+        # Adjust normalisation for colour scale if required.
+
+        vmin, vmax = None, None
         norm = None
 
-        # If using a logarithmic colour scale, zero bins need to be set to a small nominal value for the LogNorm() to work properly.
-
         if args.PlotCScale == 'log':
-            shift = args.HistPlotNormVMin
+            # For logarithmic scales, the zero needs to be shifted to a small nominal value for the LogNorm() to work properly.
 
-            if shift is None:
-                shift = hist_z[hist_z > 0.0].min() / 10.0
+            vmin, vmax = args.HistPlotNorm
 
-            hist_z += shift
+            if vmin is None:
+                vmin = hist_z[hist_z > 0.0].min() / 10.0
+
+            hist_z += vmin
 
             norm = LogNorm(
-                vmin = shift
+                vmin = vmin, vmax = vmax
                 )
+        else:
+            vmin, vmax = args.HistPlotNorm
 
         # Draw histogram.
 
         plt.pcolor(
             hist_x, hist_y, hist_z.T,
-            cmap = args.HistPlotColourMap, norm = norm
+            cmap = args.HistPlotColourMap, vmin = vmin, vmax = vmax, norm = norm
             )
 
         # Add a colour bar if required.

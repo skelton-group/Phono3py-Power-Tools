@@ -176,23 +176,23 @@ This plot not only shows the frequency spectrum of the |<b><i>v</i></b><sub><i>&
 
 If plotting multiple quantities, it is usually desirable to treat the colour scale "qualitatively" and remove the colour bar.
 The colour bar can be omitted by specifying the `--hist-no-cbar` option.
-To obtain a similar colour gradiens across a set of plots when using a logarithmic colour scale, it is often useful to set a common minimum value for colour normalisation using the `--hist-norm-vmin` option.
+To obtain a consistent colour gradient across a set of plots, it is useful to set a common minimum and maximum value for colour normalisation using the `--hist-norm` option (appropriate values can be found by inspecting individual plots):
 
 ```bash
 $ phono3py-mode-plot kappa-m161616.hdf5 --plot-c='kappa' --hist \
-    --hist-norm-vmin=1e-8 --hist-no-cbar --x-range="0 5.5" \
+    --hist-no-cbar --hist-norm="1e-8 1e-2" --x-range="0 5.5" \
     -o SnSe-Kappa-Hist-Kappa.png
 
 $ phono3py-mode-plot kappa-m161616.hdf5 --plot-y='cv' --plot-c='kappa' --hist \
-    --hist-norm-vmin=1e-8 --hist-no-cbar --x-range="0 5.5" --y-range="8.0 8.7" \
+    --hist-no-cbar --hist-norm="1e-8 1e-2" --x-range="0 5.5" --y-range="8.0 8.7" \
     -o SnSe-CV-Hist-Kappa.png
 
 $ phono3py-mode-plot kappa-m161616.hdf5 --plot-y='gv' --plot-c='kappa' --hist \
-    --hist-norm-vmin=1e-8 --hist-no-cbar --x-range="0 5.5" \
+    --hist-no-cbar --hist-norm="1e-8 1e-2" --x-range="0 5.5" \
     -o SnSe-GV-Hist-Kappa.png
 
 $ phono3py-mode-plot kappa-m161616.hdf5 --plot-y='tau' --plot-c='kappa' --hist \
-    --hist-norm-vmin=1e-8 --hist-no-cbar --x-range="0 5.5" \
+    --hist-no-cbar --hist-norm="1e-8 1e-2" --x-range="0 5.5" \
     -o SnSe-Tau-Hist-Kappa.png
 ```
 
@@ -265,8 +265,8 @@ Particularly useful options are summarised in the following table, some of which
     <td>&nbsp;</td>
   </tr>
   <tr>
-    <td><samp> --hist-norm-vmin</samp></td>
-    <td>Set the minimum value used to normalise logarithmic colour scales in histogram plots</td>
+    <td><samp> --hist-norm</samp></td>
+    <td>Set the minimum/maximum values used to normalise the colour scale in histogram plots</td>
     <td>&nbsp;</td>
   </tr>
 </table>
