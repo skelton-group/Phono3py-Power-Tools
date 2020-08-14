@@ -123,4 +123,5 @@ Documentation including a tutorial can be found [here](./Docs/phono3py-mode-plot
 ## Contributions, bug reports and feature requests
 
 We are happy to accept contributions.
-If you with to report bugs or request new features, please submit them using the [issue tracker](https://github.com/skelton-group/Phono3py-Power-Tools/issues).
+To report bugs or request new features, please use the [Issue Tracker](https://github.com/skelton-group/Phono3py-Power-Tools/issues).
+If you use the programs in this repository in your work, please let us know [jonathan.skelton[at]manchester.ac.uk](mailto:jonathan.skelton@manchester.ac.uk) - we will collect them and put up a list of outputs.
