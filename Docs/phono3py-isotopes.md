@@ -72,7 +72,7 @@ $ phono3py --dim="2 2 2" --dim-fc2="3 3 3" --pa="0 1/2 1/2  1/2 0 1/2  1/2 1/2 0
 ```bash
 $ phono3py --dim="2 2 2" --dim-fc2="3 3 3" --pa="0 1/2 1/2  1/2 0 1/2  1/2 1/2 0" \
     --fc2 --fc3 -v --br --mesh="32 32 32" --read-gamma \
-	--mass="69.72307 74.92160" --mass-variances="1.97127e-04 0.00000e+00" -o "iso.nat.a"
+	  --mass="69.72307 74.92160" --mass-variances="1.97127e-04 0.00000e+00" -o "iso.nat.a"
 ```
 
 This example is purely for illustrative purposes, because (a) the atomic masses used are the Phono3py defaults, so do not actually need to be set in this case, and (b) the natural isotopic mass variance can be set automatically using the `--isotope` tag:
@@ -351,8 +351,8 @@ while read -r x y
 do
   params=$(
     phono3py-isotopes 68.92558 70.92471 \
-    --site-average --site-occupation="${x} ${y}" \
-    --scriptable
+      --site-average --site-occupation="${x} ${y}" \
+      --scriptable
     )
 
   read -r m_ave m_var <<< ${params}

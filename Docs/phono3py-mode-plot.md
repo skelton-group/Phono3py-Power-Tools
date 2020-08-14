@@ -101,29 +101,28 @@ Our first port of call is generally to compare the modal terms in the <b><i>&kap
 We also use the `--x-range`, `--y-range` and `--scatter-marker` options to customise the plots:
 
 ```bash
-$ phono3py-mode-plot kappa-m161616.hdf5 --x-range="0 5.5" -o SnSe-Kappa.png
-$ phono3py-mode-plot kappa-m161616.hdf5 --plot-y=cv --x-range="0 5.5" --y-range="8.0 8.7" --scatter-marker='o' -o SnSe-CV.png
-$ phono3py-mode-plot kappa-m161616.hdf5 --plot-y=gv --x-range="0 5.5" --scatter-marker='s' -o SnSe-GV.png
-$ phono3py-mode-plot kappa-m161616.hdf5 --plot-y=tau --x-range="0 5.5" --scatter-marker='p' -o SnSe-Tau.png
+$ phono3py-mode-plot kappa-m161616.hdf5 \
+    --x-range="0 5.5" -o SnSe-Kappa.png
+
+$ phono3py-mode-plot kappa-m161616.hdf5 --plot-y='cv' \
+    --x-range="0 5.5" --y-range="8.0 8.7" --scatter-marker='o' \
+    -o SnSe-CV.png
+
+$ phono3py-mode-plot kappa-m161616.hdf5 --plot-y='gv' \
+    --x-range="0 5.5" --scatter-marker='s' \
+    -o SnSe-GV.png
+
+$ phono3py-mode-plot kappa-m161616.hdf5 --plot-y='tau' \
+    --x-range="0 5.5" --scatter-marker='p' \
+    -o SnSe-Tau.png
 ```
 
-<!-- Messy, but no obvious way to do this with pure Markdown. -->
-
-<table style="border-collapse: collapse;">
-  <tr style="border: none;">
-    <td style="border: none; background-color: white;"><img src="Resources/phono3py-mode-plot_TutorialA-2a.png" width="400"></td>
-    <td style="border: none; background-color: white;"><img src="Resources/phono3py-mode-plot_TutorialA-2b.png" width="400"></td>
-  </tr>
-  <tr style="border: none;">
-    <td style="border: none; background-color: white;"><img src="Resources/phono3py-mode-plot_TutorialA-2c.png" width="400"></td>
-    <td style="border: none; background-color: white;"><img src="Resources/phono3py-mode-plot_TutorialA-2d.png" width="400"></td>
-  </tr>
-</table>
+<img src="Resources/phono3py-mode-plot_TutorialA-2.png" width="800">
 
 The analagous `--plot-x` option can be used to select a different modal quantity to plot on the x axis - for example, there is usually a good correlation between <i><span style="text-decoration: overline;">&kappa;</span></i><sub><i>&lambda;</i></sub> and the mean-free paths |<b>&Lambda;</b><sub><i>&lambda;</i></sub>| = |<b><i>v</i></b><sub><i>&lambda;</i></sub>| &times; <i>&tau;</i><sub><i>&lambda;</i></sub>:
 
 ```bash
-$ phono3py-mode-plot kappa-m161616.hdf5 --plot-x=mfp -o SnSe-MFP-Kappa.png
+$ phono3py-mode-plot kappa-m161616.hdf5 --plot-x='mfp' -o SnSe-MFP-Kappa.png
 ```
 
 <img src="Resources/phono3py-mode-plot_TutorialA-3.png" width="400">
@@ -131,30 +130,24 @@ $ phono3py-mode-plot kappa-m161616.hdf5 --plot-x=mfp -o SnSe-MFP-Kappa.png
 The program can also be used to compare the &Gamma;<sub><i>&lambda;</i></sub> to the <i>P</i><sub><i>&lambda;</i></sub> (note that the <i>P</i><sub><i>&lambda;</i></sub> are only calculated if the `--full-pp` option was set during the Phono3py calculation):
 
 ```bash
-$ phono3py-mode-plot kappa-m161616.hdf5 --plot-y=gamma --x-range="0 5.5" -o SnSe-Gamma.png
-$ phono3py-mode-plot kappa-m161616.hdf5 --plot-y=pp --x-range="0 5.5" --y-range="5e-12 1e-9" --scatter-marker='o' -o SnSe-PP.png
+$ phono3py-mode-plot kappa-m161616.hdf5 --plot-y='gamma' \
+    --x-range="0 5.5" -o SnSe-Gamma.png
+
+$ phono3py-mode-plot kappa-m161616.hdf5 --plot-y='pp' \
+    --x-range="0 5.5" --y-range="5e-12 1e-9" --scatter-marker='o' \
+    -o SnSe-PP.png
 ```
 
-<table style="border-collapse: collapse;">
-  <tr style="border: none;">
-    <td style="border: none; background-color: white;"><img src="Resources/phono3py-mode-plot_TutorialA-4a.png" width="400"></td>
-    <td style="border: none; background-color: white;"><img src="Resources/phono3py-mode-plot_TutorialA-4b.png" width="400"></td>
-  </tr>
-</table>
+<img src="Resources/phono3py-mode-plot_TutorialA-4.png" width="800">
 
 Finally, for *T*-dependent quantities a temperature can be selected with the `--temp` option (the default is 300 K):
 
 ```bash
-$ phono3py-mode-plot --plot-y=tau --x-range="0 5.5" -o SnSe-Tau-750.png
-$ phono3py-mode-plot --plot-y=tau --temp=750 --x-range="0 5.5" -o SnSe-Tau-750.png
+$ phono3py-mode-plot --plot-y='tau' --x-range="0 5.5" -o SnSe-Tau-750.png
+$ phono3py-mode-plot --plot-y='tau' --temp=750 --x-range="0 5.5" -o SnSe-Tau-750.png
 ```
 
-<table style="border-collapse: collapse;">
-  <tr style="border: none;">
-    <td style="border: none; background-color: white;"><img src="Resources/phono3py-mode-plot_TutorialA-5a.png" width="400"></td>
-    <td style="border: none; background-color: white;"><img src="Resources/phono3py-mode-plot_TutorialA-5b.png" width="400"></td>
-  </tr>
-</table>
+<img src="Resources/phono3py-mode-plot_TutorialA-5.png" width="800">
 
 
 ### b. Histogram plots
@@ -163,7 +156,8 @@ As an alternative to scatter plots, `phono3py-mode-plot` can also generate 2D hi
 Histogram plots are selected with the `--hist` argument:
 
 ```bash
-$ phono3py-mode-plot kappa-m161616.hdf5 --plot-y=gv --hist --x-range="0 5.5" -o SnSe-GV-Hist.png
+$ phono3py-mode-plot kappa-m161616.hdf5 --plot-y='gv' --hist \
+    --x-range="0 5.5" -o SnSe-GV-Hist.png
 ```
 
 <img src="Resources/phono3py-mode-plot_TutorialB-1.png" width="500">
@@ -172,7 +166,8 @@ By default, the histogram is coloured by the number (density) of modes.
 However, the individual modes can be weighted by any of the modal quantities using the `--plot-c` option - e.g.:
 
 ```bash
-$ phono3py-mode-plot kappa-m161616.hdf5 --plot-y=gv --plot-c=kappa --hist --x-range="0 5.5" -o SnSe-GV-Hist-Kappa.png
+$ phono3py-mode-plot kappa-m161616.hdf5 --plot-y='gv' --plot-c='kappa' \
+    --hist --x-range="0 5.5" -o SnSe-GV-Hist-Kappa.png
 ```
 
 <img src="Resources/phono3py-mode-plot_TutorialB-2.png" width="500">
@@ -184,32 +179,38 @@ The colour bar can be omitted by specifying the `--hist-no-cbar` option.
 To obtain a similar colour gradiens across a set of plots when using a logarithmic colour scale, it is often useful to set a common minimum value for colour normalisation using the `--hist-norm-vmin` option.
 
 ```bash
-$ phono3py-mode-plot kappa-m161616.hdf5 --plot-c=kappa --hist --hist-norm-vmin=1e-8 --hist-no-cbar --x-range="0 5.5" -o SnSe-Kappa-Hist-Kappa.png
-$ phono3py-mode-plot kappa-m161616.hdf5 --plot-y=cv --plot-c=kappa --hist --hist-norm-vmin=1e-8 --hist-no-cbar --x-range="0 5.5" --y-range="8.0 8.7" -o SnSe-CV-Hist-Kappa.png
-$ phono3py-mode-plot kappa-m161616.hdf5 --plot-y=gv --plot-c=kappa --hist --hist-norm-vmin=1e-8 --hist-no-cbar --x-range="0 5.5" -o SnSe-GV-Hist-Kappa.png
-$ phono3py-mode-plot kappa-m161616.hdf5 --plot-y=tau --plot-c=kappa --hist --hist-norm-vmin=1e-8 --hist-no-cbar --x-range="0 5.5" -o SnSe-Tau-Hist-Kappa.png
+$ phono3py-mode-plot kappa-m161616.hdf5 --plot-c='kappa' --hist \
+    --hist-norm-vmin=1e-8 --hist-no-cbar --x-range="0 5.5" \
+    -o SnSe-Kappa-Hist-Kappa.png
+
+$ phono3py-mode-plot kappa-m161616.hdf5 --plot-y='cv' --plot-c='kappa' --hist \
+    --hist-norm-vmin=1e-8 --hist-no-cbar --x-range="0 5.5" --y-range="8.0 8.7" \
+    -o SnSe-CV-Hist-Kappa.png
+
+$ phono3py-mode-plot kappa-m161616.hdf5 --plot-y='gv' --plot-c='kappa' --hist \
+    --hist-norm-vmin=1e-8 --hist-no-cbar --x-range="0 5.5" \
+    -o SnSe-GV-Hist-Kappa.png
+
+$ phono3py-mode-plot kappa-m161616.hdf5 --plot-y='tau' --plot-c='kappa' --hist \
+    --hist-norm-vmin=1e-8 --hist-no-cbar --x-range="0 5.5" \
+    -o SnSe-Tau-Hist-Kappa.png
 ```
 
-<table style="border-collapse: collapse;">
-  <tr style="border: none;">
-    <td style="border: none; background-color: white;"><img src="Resources/phono3py-mode-plot_TutorialB-3a.png" width="400"></td>
-    <td style="border: none; background-color: white;"><img src="Resources/phono3py-mode-plot_TutorialB-3b.png" width="400"></td>
-  </tr>
-  <tr style="border: none;">
-    <td style="border: none; background-color: white;"><img src="Resources/phono3py-mode-plot_TutorialB-3c.png" width="400"></td>
-    <td style="border: none; background-color: white;"><img src="Resources/phono3py-mode-plot_TutorialB-3d.png" width="400"></td>
-  </tr>
-</table>
+<img src="Resources/phono3py-mode-plot_TutorialB-3.png" width="800">
 
 Finally, the colour map used for plotting can be set using the `--hist-cmap` parameter:
 
 ```bash
-$ phono3py-mode-plot kappa-m161616.hdf5 --plot-y=gv --plot-c=kappa --hist --hist-cmap='plasma' --x-range="0 5.5" -o SnSe-GV-Hist-Kappa-Plasma.png
-$ phono3py-mode-plot kappa-m161616.hdf5 --plot-y=gv --plot-c=kappa --hist --hist-cmap='jet' --x-range="0 5.5" -o SnSe-GV-Hist-Kappa-Jet.png
+$ phono3py-mode-plot kappa-m161616.hdf5 --plot-y='gv' --plot-c='kappa' \
+    --hist --hist-cmap='plasma' --x-range="0 5.5" \
+    -o SnSe-GV-Hist-Kappa-Plasma.png
+
+$ phono3py-mode-plot kappa-m161616.hdf5 --plot-y='gv' --plot-c='kappa' \
+    --hist --hist-cmap='jet' --x-range="0 5.5" \
+    -o SnSe-GV-Hist-Kappa-Jet.png
 ```
 
-<img src="Resources/phono3py-mode-plot_TutorialB-4a.png" width="500">
-<img src="Resources/phono3py-mode-plot_TutorialB-4b.png" width="500">
+<img src="Resources/phono3py-mode-plot_TutorialB-4.png" width="500">
 
 
 ### c. Additional customisation
@@ -275,63 +276,63 @@ This can be changed by setting the `--x-scale` and `--y-scale` options to `linea
 
 ```bash
 $ phono3py-mode-plot kappa-m161616.hdf5 --x-range="0 5.5" -o SnSe-Kappa-Log.png
-$ phono3py-mode-plot kappa-m161616.hdf5 --x-range="0 5.5" --y-range="0 0.7" --y-scale=linear -o SnSe-Kappa-Linear.png
+
+$ phono3py-mode-plot kappa-m161616.hdf5 --x-range="0 5.5" --y-range="0 0.7" \
+    --y-scale=linear -o SnSe-Kappa-Linear.png
 ```
 
-<table style="border-collapse: collapse;">
-  <tr style="border: none;">
-    <td style="border: none; background-color: white;"><img src="Resources/phono3py-mode-plot_TutorialC-1a.png" width="400"></td>
-    <td style="border: none; background-color: white;"><img src="Resources/phono3py-mode-plot_TutorialC-1b.png" width="400"></td>
-  </tr>
-</table>
+<img src="Resources/phono3py-mode-plot_TutorialC-1.png" width="800">
 
 Note that when using a linear scale quantities with characteristically small values are scaled to a sensible "order of magnitude" - for example the <i><span style="text-decoration: overline;">&kappa;</span></i><sub><i>&lambda;</i></sub> are plotted in units of 10<sup>-2</sup> W m<sup>-1</sup> K<sup>-1</sup>.
 
 An analagous `--c-scale` parameter can be used to select linear or logarithmic colour scales for colouring histogram plots:
 
 ```bash
-$ phono3py-mode-plot kappa-m161616.hdf5 --hist --x-range="0 5.5" -o SnSe-GV-Hist-Kappa-LogColour.png
-$ phono3py-mode-plot kappa-m161616.hdf5 --hist --x-range="0 5.5" --c-scale='linear' -o SnSe-GV-Hist-Kappa-LinearColour.png
+$ phono3py-mode-plot kappa-m161616.hdf5 --hist --x-range="0 5.5" \
+    -o SnSe-Kappa-Hist-Kappa-LogColour.png
+
+$ phono3py-mode-plot kappa-m161616.hdf5 --hist --x-range="0 5.5" \
+    --c-scale='linear' -o SnSe-Kappa-Hist-LinearColour.png
 ```
 
-<img src="Resources/phono3py-mode-plot_TutorialC-2a.png" width="500">
-<img src="Resources/phono3py-mode-plot_TutorialC-2b.png" width="500">
+<img src="Resources/phono3py-mode-plot_TutorialC-2.png" width="500">
 
 For scatter plots, the default colour scheme is to colour the markers by band index, which produces a colour gradient when the frequencies are used as the x axis.
 The default scheme for doing this is the blue -> red `fire` scheme.
 An alternative blue -> cyan `ice` scheme can be selected using the `--colour-by-band` option:
 
 ```bash
-$ phono3py-mode-plot kappa-m161616.hdf5 --plot-y=gv --x-range="0 5.5" -o SnSe-GV-Fire.png
-$ phono3py-mode-plot kappa-m161616.hdf5 --plot-y=gv --x-range="0 5.5" --scatter-colour-by-band='ice' -o SnSe-GV-Ice.png
+$ phono3py-mode-plot kappa-m161616.hdf5 --plot-y='gv' --x-range="0 5.5" \
+    -o SnSe-GV-Fire.png
+
+$ phono3py-mode-plot kappa-m161616.hdf5 --plot-y='gv' --x-range="0 5.5" \
+    --scatter-colour-by-band='ice' -o SnSe-GV-Ice.png
 ```
 
-<table style="border-collapse: collapse;">
-  <tr style="border: none;">
-    <td style="border: none; background-color: white;"><img src="Resources/phono3py-mode-plot_TutorialC-3a.png" width="400"></td>
-    <td style="border: none; background-color: white;"><img src="Resources/phono3py-mode-plot_TutorialC-3b.png" width="400"></td>
-  </tr>
-</table>
+<img src="Resources/phono3py-mode-plot_TutorialC-3.png" width="800">
+
 
 Alternatively, a single solid colour can be selected with the `--scatter-marker-colour` option, which overrides `--colour-by-band`:
 
 ```bash
-$ phono3py-mode-plot kappa-m161616.hdf5 --x-range="0 5.5" --scatter-marker-colour='b' -o SnSe-Kappa.png
-$ phono3py-mode-plot kappa-m161616.hdf5 --plot-y=cv --x-range="0 5.5" --y-range="8.0 8.7" --scatter-marker='o' --scatter-marker-colour='r' -o SnSe-CV.png
-$ phono3py-mode-plot kappa-m161616.hdf5 --plot-y=gv --x-range="0 5.5" --scatter-marker='s' --scatter-marker-colour='g' -o SnSe-GV.png
-$ phono3py-mode-plot kappa-m161616.hdf5 --plot-y=tau --x-range="0 5.5" --scatter-marker='p' --scatter-marker-colour='orange' -o SnSe-Tau.png
+$ phono3py-mode-plot kappa-m161616.hdf5 --x-range="0 5.5" \
+    --scatter-marker-colour='b' -o SnSe-Kappa.png
+
+$ phono3py-mode-plot kappa-m161616.hdf5 --plot-y='cv' \
+    --x-range="0 5.5" --y-range="8.0 8.7" --scatter-marker='o' \
+    --scatter-marker-colour='r' -o SnSe-CV.png
+
+$ phono3py-mode-plot kappa-m161616.hdf5 --plot-y='gv' \
+    --x-range="0 5.5" --scatter-marker='s' --scatter-marker-colour='g' \
+    -o SnSe-GV.png
+
+$ phono3py-mode-plot kappa-m161616.hdf5 --plot-y='tau' \
+    --x-range="0 5.5" --scatter-marker='p' --scatter-marker-colour='orange' \
+    -o SnSe-Tau.png
 ```
 
-<table style="border-collapse: collapse;">
-  <tr style="border: none;">
-    <td style="border: none; background-color: white;"><img src="Resources/phono3py-mode-plot_TutorialC-4a.png" width="400"></td>
-    <td style="border: none; background-color: white;"><img src="Resources/phono3py-mode-plot_TutorialC-4b.png" width="400"></td>
-  </tr>
-  <tr style="border: none;">
-    <td style="border: none; background-color: white;"><img src="Resources/phono3py-mode-plot_TutorialC-4c.png" width="400"></td>
-    <td style="border: none; background-color: white;"><img src="Resources/phono3py-mode-plot_TutorialC-4d.png" width="400"></td>
-  </tr>
-</table>
+<img src="Resources/phono3py-mode-plot_TutorialC-4.png" width="800">
+
 
 
 ## FAQs and Troubleshooting
