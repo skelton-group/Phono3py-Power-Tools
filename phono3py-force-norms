@@ -1,0 +1,200 @@
+#!/usr/bin/env python
+
+
+# -------
+# Imports
+# -------
+
+import csv
+import math
+
+import numpy as np
+
+import matplotlib.pyplot as plt
+
+from argparse import ArgumentParser
+
+from Phono3pyPowerTools.PhonopyIO import IsFORCE_SETS, ReadFORCE_SETS
+from Phono3pyPowerTools.Phono3pyIO import IsFORCES_FC3, ReadFORCES_FC3
+from Phono3pyPowerTools.Plotting import InitialiseMatplotlib
+from Phono3pyPowerTools.Utilities import OpenForCSVWriter
+
+
+# ----
+# Main
+# ----
+
+if __name__ == "__main__":
+    # Command-line arguments.
+
+    parser = ArgumentParser(
+        description = "Analyse the norms of the sets of forces in a FORCE_SETS or FORCES_FC3 file"
+        )
+
+    parser.add_argument(
+        metavar = "input_file",
+        dest = 'InputFile',
+        help = "FORCE_SETS or FORCES_FC3 file to read"
+        )
+        
+    args = parser.parse_args()
+    
+    # Read input file.
+    
+    force_sets = None
+    
+    if IsFORCE_SETS(args.InputFile):
+        force_sets = ReadFORCE_SETS(args.InputFile)
+    elif IsFORCES_FC3(args.InputFile):
+        force_sets = ReadFORCES_FC3(args.InputFile)
+    else:
+        raise Exception("Error: Unable to determine type of input file.")
+    
+    # Process.
+
+    disp_nums = np.arange(
+        1, len(force_sets) + 1
+        )
+    
+    force_norm_sets = np.linalg.norm(
+        [force_set for _, force_set in force_sets], axis = -1
+        )
+    
+    # Write force norms to file.
+    
+    num_configs, num_atoms_sc = force_norm_sets.shape
+    
+    with OpenForCSVWriter(r"ForceNorms.csv") as output_writer:
+        output_writer_csv = csv.writer(output_writer)
+        
+        output_writer_csv.writerow(
+            ["", r"Force Norm [eV \AA^-1]"] + [""] * (num_atoms_sc - 1)
+            )
+
+        output_writer_csv.writerow(
+            [r"Configuration"] + [r"Atom {0}".format(i + 1) for i in range(0, num_atoms_sc)]
+            )
+        
+        for i, force_norm_set in enumerate(force_norm_sets):
+            output_writer_csv.writerow(
+                [i + 1] + [norm for norm in force_norm_set]
+                )
+
+    # Initialise Matplotlib.
+    
+    InitialiseMatplotlib()
+    
+    # Shared variables.
+
+    f_norm_min = force_norm_sets[force_norm_sets > 0.0].min()
+    f_norm_max = force_norm_sets[force_norm_sets > 0.0].max()
+    
+    plot_f_min = math.pow(
+        10.0, math.floor(math.log10(f_norm_min))
+        )
+    
+    plot_f_max = math.pow(
+        10.0, math.ceil(math.log10(f_norm_max))
+        )
+    
+    # Plot 1: Cumulative % forces as a function of norm.
+    
+    force_norms_sorted = np.sort(
+        np.ravel(force_norm_sets)
+        )
+    
+    num_forces = np.arange(
+        1, num_configs * num_atoms_sc + 1, 1
+        )
+    
+    pc_forces = 100.0 * num_forces / float(num_configs * num_atoms_sc)
+
+    # Workaround for a "RuntimeError: Invalid DISPLAY variable" Exception when using a "headless" QT backend.
+    # https://stackoverflow.com/questions/35737116/runtimeerror-invalid-display-variable
+
+    try:
+        plt.figure(figsize = (8.6 / 2.54, 7.0 / 2.54))
+    except RuntimeError:
+        plt.switch_backend('agg')
+        plt.figure(figsize = (8.6 / 2.54, 7.0 / 2.54))
+    
+    force_norms_plot = [plot_f_min] + [norm for norm in force_norms_sorted] + [plot_f_max]
+    pc_forces_plot = [0.0] + [pc for pc in pc_forces] + [100.0]
+    
+    plt.plot(
+        force_norms_plot, pc_forces_plot, color = 'b'
+        )
+    
+    plt.fill_between(
+        force_norms_plot, pc_forces_plot,
+        color = 'b', alpha = 0.25, linewidth = 0.0
+        )
+    
+    plt.xscale('log')
+    
+    plt.xlim(plot_f_min, plot_f_max)
+    
+    plt.ylim(0.0, 100.0)
+
+    plt.xlabel(r"Force Norm [eV $\mathrm{\AA}^{-1}$]")
+    plt.ylabel(r"% Force Sets")
+
+    axes = plt.gca()
+    
+    axes.grid(
+        color = (0.75, 0.75, 0.75), dashes = (3.0, 1.0),
+        linewidth = 0.5
+        )
+    
+    axes.set_axisbelow(True)
+
+    plt.tight_layout()
+    
+    plt.savefig(
+        r"ForceNorms-1.png", format = 'png', dpi = 300
+        )
+    
+    plt.close()
+    
+    # Plot 2: Scatter plot of force norms.
+
+    try:
+        plt.figure(figsize = (17.2 / 2.54, 7.0 / 2.54))
+    except RuntimeError:
+        plt.switch_backend('agg')
+        plt.figure(figsize = (17.2 / 2.54, 7.0 / 2.54))
+    
+    scatter_x = np.repeat(disp_nums, num_atoms_sc).reshape((num_configs, num_atoms_sc))
+    
+    plt.scatter(
+        scatter_x, force_norm_sets,
+        marker = '^', s = 16.0, facecolor = 'none', edgecolor = 'b'
+        )
+    
+    plt.xlim(
+        0, disp_nums.max() + 1
+        )
+    
+    plt.yscale('log')
+    
+    plt.ylim(plot_f_min, plot_f_max)
+    
+    plt.xlabel(r"Disp. #")
+    plt.ylabel(r"Force Norm [eV $\mathrm{\AA}^{-1}$]")
+    
+    axes = plt.gca()
+    
+    axes.grid(
+        color = (0.75, 0.75, 0.75), dashes = (3.0, 1.0),
+        linewidth = 0.5
+        )
+    
+    axes.set_axisbelow(True)
+    
+    plt.tight_layout()
+    
+    plt.savefig(
+        r"ForceNorms-2.png", format = 'png', dpi = 300
+        )
+    
+    plt.close()

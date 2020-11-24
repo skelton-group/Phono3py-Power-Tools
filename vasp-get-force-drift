@@ -91,21 +91,21 @@ if __name__ == "__main__":
         1, len(drift_sets) + 1
         )
     
-    norm_abs_drifts = np.linalg.norm(
+    drift_norms = np.linalg.norm(
         drift_sets, axis = -1
         )
 
     # Analyse.
     
-    drift_ave = np.mean(norm_abs_drifts)
-    drift_std = np.std(norm_abs_drifts)
+    drift_ave = np.mean(drift_norms)
+    drift_std = np.std(drift_norms)
     
     print("Statistics")
     print("----------")
     print("")
     
-    print("Min. Drift: {0:.3e}".format(norm_abs_drifts.min()))
-    print("Max. Drift: {0:.3e}".format(norm_abs_drifts.max()))
+    print("Min. Drift: {0:.3e}".format(drift_norms.min()))
+    print("Max. Drift: {0:.3e}".format(drift_norms.max()))
     print("Avg. Drift: {0:.3e}".format(drift_ave))
     print("Std. Drift: {0:.3e}".format(drift_std))
     print("")
@@ -123,14 +123,14 @@ if __name__ == "__main__":
             [r"Input File", r"Disp. #", r"x", r"y", r"z", r"Norm"]
             )
         
-        for input_file, disp_num, (x, y, z), norm in zip(input_files, disp_nums, drift_sets, norm_abs_drifts):
+        for input_file, disp_num, (x, y, z), norm in zip(input_files, disp_nums, drift_sets, drift_norms):
             output_writer_csv.writerow(
                 [input_file, disp_num, x, y, z, norm]
                 )
     
     # The plotting code will crash if all drift values are zero.
     
-    if (norm_abs_drifts == 0.0).all():
+    if (drift_norms == 0.0).all():
         print("All drift values are zero -> skipping plot.")
     else:
         # Initialise Matplotlib.
@@ -149,18 +149,18 @@ if __name__ == "__main__":
             plt.figure(figsize = (17.2 / 2.54, 7.0 / 2.54))
         
         plt.scatter(
-            disp_nums, norm_abs_drifts,
+            disp_nums, drift_norms,
             marker = 'o', s = 16.0, facecolor = 'none', edgecolor = 'r'
             )
         
         plt.xlim(
-            0, disp_num.max()
+            0, disp_num.max() + 1
             )
         
         plt.yscale('log')
         
-        y_min = norm_abs_drifts[norm_abs_drifts > 0.0].min()
-        y_max = norm_abs_drifts[norm_abs_drifts > 0.0].max()
+        y_min = drift_norms[drift_norms > 0.0].min()
+        y_max = drift_norms[drift_norms > 0.0].max()
         
         y_min = math.pow(
             10.0, math.floor(math.log10(y_min))

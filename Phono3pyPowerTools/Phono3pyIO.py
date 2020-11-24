@@ -28,6 +28,105 @@ import warnings
 ZeroTolerance = 1.0e-5
 
 
+# -----------------
+# FORCES_FC3 Parser
+# -----------------
+
+def IsFORCES_FC3(file_path):
+    """ Peeks at file_path and returns True if it appears to be a Phono3py FORCES_FC3 file. """
+    
+    with open(file_path, 'r') as input_reader:
+        return next(input_reader).strip() == "# File: 1"
+
+def ReadFORCES_FC3(file_path):
+    """
+    Reads sets of forces from a Phono3py FORCES_FC3 file.
+    
+    Returns:
+        A list of (disps, force_set) tuples.
+        disps are lists of one or more (atom_index, disp) tuples listing the atomic displacements in the configuration.
+        force_set is a list of vectors listing the forces on the atoms.
+    """
+    
+    force_sets = []
+    
+    with open(file_path, 'r') as input_reader:
+        # Temporary variables.
+        
+        disps, force_set = None, None
+        
+        for line in input_reader:
+            line = line.strip()
+            
+            if line == "":
+                break
+            
+            if line.startswith("# File:"):
+                # Start of force set.
+                
+                # If the disps and force_set variables are not None, capture them.
+                # The file number indicated in the first line should be incremental -> use as a sanity check.
+                
+                if disps is not None and force_set is not None:
+                    force_sets.append(
+                        (disps, force_set)
+                        )
+                    
+                    disps, force_set = None, None
+                
+                file_number = int(line.replace("# File: ", ""))
+                
+                # Sanity check.
+                                               
+                assert file_number == len(force_sets) + 1
+                
+            elif line.startswith('#'):
+                # Line gives the index of the displaced atom and the displacement direction.
+                
+                atom_index, disp_x, disp_y, disp_z = line[1:].strip().split()
+                
+                if disps is None:
+                    disps = []
+                
+                disps.append(
+                    (int(atom_index), np.array([float(disp_x), float(disp_y), float(disp_z)], dtype = np.float64))
+                    )
+            
+            else:
+                # Line gives the x, y and x components of the force on the atoms.
+                
+                f_x, f_y, f_z = line.strip().split()
+                
+                if force_set is None:
+                    force_set = []
+                
+                force_set.append(
+                    np.array([float(f_x), float(f_y), float(f_z)], dtype = np.float64)
+                    )
+        
+        # Capture last read set if required.
+        
+        if disps is not None and force_set is not None:
+            force_sets.append(
+                (disps, force_set)
+                )
+        
+    # Sanity checks.
+    
+    assert len(force_sets) > 0
+    
+    _, force_set = force_sets[0]
+    
+    num_atoms_sc = len(force_set)
+    
+    for _, force_set in force_sets[1:]:
+        assert len(force_set) == num_atoms_sc
+    
+    # Return captured data.
+    
+    return force_sets
+
+
 # -----------------------
 # Phono3pyKappaHDF5 Class
 # -----------------------
