@@ -1,0 +1,197 @@
+#!/usr/bin/env python
+
+
+# -------
+# Imports
+# -------
+
+import csv
+import math
+
+import numpy as np
+
+import matplotlib.pyplot as plt
+
+from argparse import ArgumentParser
+
+from Phono3pyPowerTools.Plotting import InitialiseMatplotlib
+from Phono3pyPowerTools.Utilities import OpenForCSVWriter
+
+
+# ----
+# Main
+# ----
+
+if __name__ == "__main__":
+    # Command-line arguments.
+
+    parser = ArgumentParser(
+        description = "Get force drift from a set of VASP OUTCAR files"
+        )
+
+    parser.add_argument(
+        metavar = "input_file",
+        nargs = '+', dest = 'InputFiles',
+        help = "VASP OUTCAR files to read"
+        )
+    
+    parser.add_argument(
+        "-s", "--sort",
+        action = 'store_true', dest = "SortInputFiles",
+        help = "Sort list of input files before reading (default: False)"
+        )
+    
+    args = parser.parse_args()
+    
+    # Read input files.
+    
+    input_files = args.InputFiles
+    
+    if args.SortInputFiles:
+        input_files = sorted(args.InputFiles)
+    
+    drift_sets = []
+    
+    for input_file in input_files:
+        print("Reading: {0}".format(input_file))
+        
+        drift_set = None
+        
+        with open(input_file, 'r') as input_reader:
+            for line in input_reader:
+                line = line.strip()
+                
+                if line.startswith("total drift:"):
+                    temp = [
+                        float(val) for val in line.replace("total drift:", "").strip().split()
+                        ]
+                    
+                    assert len(temp) == 3
+                    
+                    if drift_set is not None:
+                        print("  -> WARNING: Multiple drift values found for this displacement - capturing last one.")
+                    
+                    drift_set = temp
+  
+        if drift_set is None:
+            print("  -> WARNING: No drift values found for this displacement - please check.")
+      
+        drift_sets.append(drift_set)
+    
+    print("")
+    
+    # Sanity check.
+    
+    if len(drift_sets) == 0:
+        raise Exception("Error: No drift values read from input files.")
+
+    # Process.
+
+    disp_nums = np.arange(
+        1, len(drift_sets) + 1
+        )
+    
+    norm_abs_drifts = np.linalg.norm(
+        drift_sets, axis = -1
+        )
+    
+    max_abs_drifts = np.max(
+        np.abs(drift_sets), axis = -1
+        )
+
+    # Analyse.
+    
+    drift_ave = np.mean(norm_abs_drifts)
+    drift_std = np.std(norm_abs_drifts)
+    
+    print("Statistics")
+    print("----------")
+    print("")
+    
+    print("Min. Drift: {0:.3e}".format(norm_abs_drifts.min()))
+    print("Max. Drift: {0:.3e}".format(norm_abs_drifts.max()))
+    print("Avg. Drift: {0:.3e}".format(drift_ave))
+    print("Std. Drift: {0:.3e}".format(drift_std))
+    print("")
+    
+    # Write drift values to file.
+    
+    with OpenForCSVWriter(r"ForceDrift.csv") as output_writer:
+        output_writer_csv = csv.writer(output_writer)
+        
+        output_writer_csv.writerow(
+            ["", r"Drift [eV \AA^-1]"] + [""] * 3
+            )
+
+        output_writer_csv.writerow(
+            [r"Input File", r"Disp. #", r"x", r"y", r"z", r"Norm"]
+            )
+        
+        for input_file, disp_num, (x, y, z), norm in zip(input_files, disp_nums, drift_sets, norm_abs_drifts):
+            output_writer_csv.writerow(
+                [input_file, disp_num, x, y, z, norm]
+                )
+    
+    # The plotting code will crash if all drift values are zero.
+    
+    if (norm_abs_drifts == 0.0).all():
+        print("All drift values are zero -> skipping plot.")
+    else:
+        # Initialise Matplotlib.
+        
+        InitialiseMatplotlib()
+        
+        # Plot.
+        
+        # Workaround for a "RuntimeError: Invalid DISPLAY variable" Exception when using a "headless" QT backend.
+        # https://stackoverflow.com/questions/35737116/runtimeerror-invalid-display-variable
+
+        try:
+            plt.figure(figsize = (17.2 / 2.54, 7.0 / 2.54))
+        except RuntimeError:
+            plt.switch_backend('agg')
+            plt.figure(figsize = (17.2 / 2.54, 7.0 / 2.54))
+        
+        plt.scatter(
+            disp_nums, max_abs_drifts,
+            marker = 'o', s = 16.0, facecolor = 'none', edgecolor = 'r'
+            )
+        
+        plt.xlim(
+            0, disp_num.max()
+            )
+        
+        plt.yscale('log')
+        
+        y_min = norm_abs_drifts[norm_abs_drifts > 0.0].min()
+        y_max = norm_abs_drifts[norm_abs_drifts > 0.0].max()
+        
+        y_min = math.pow(
+            10.0, math.floor(math.log10(y_min))
+            )
+        
+        y_max = math.pow(
+            10.0, math.ceil(math.log10(y_max))
+            )
+        
+        plt.ylim(y_min, y_max)
+        
+        plt.xlabel(r"Disp. #")
+        plt.ylabel(r"Drift Norm [eV $\mathrm{\AA}^{-1}$]")
+        
+        axes = plt.gca()
+        
+        axes.grid(
+            color = (0.75, 0.75, 0.75), dashes = (3.0, 1.0),
+            linewidth = 0.5
+            )
+        
+        axes.set_axisbelow(True)
+        
+        plt.tight_layout()
+        
+        plt.savefig(
+            r"ForceDrift.png", format = 'png', dpi = 300
+            )
+        
+        plt.close()

@@ -13,6 +13,7 @@ import numpy as np
 from argparse import ArgumentParser
 
 from Phono3pyPowerTools.Phono3pyIO import Phono3pyKappaHDF5
+from Phono3pyPowerTools.Utilities import OpenForCSVWriter
 
 
 # ----
@@ -121,7 +122,7 @@ if __name__ == "__main__":
 
             # Write output file.
 
-            with open(output_file, 'wb') as output_writer:
+            with OpenForCSVWriter(output_file) as output_writer:
                 output_writer_csv = csv.writer(output_writer)
 
                 output_writer_csv.writerow(header_row)

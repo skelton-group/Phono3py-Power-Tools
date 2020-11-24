@@ -16,7 +16,7 @@ from argparse import ArgumentParser
 
 from matplotlib.colors import LogNorm
 
-from Phono3pyPowerTools.Matplotlib import (
+from Phono3pyPowerTools.Plotting import (
     InitialiseMatplotlib,
     HSBColourToRGB,
     GetDefaultAxisLimits,
@@ -456,7 +456,7 @@ if __name__ == "__main__":
 
         plot_x = _GetDataFuncLUT[args.PlotX](kappa_hdf5, args.Temperature, args.UseRTA).ravel()
         plot_y = _GetDataFuncLUT[args.PlotY](kappa_hdf5, args.Temperature, args.UseRTA).ravel()
-
+        
         if args.PlotHist:
             # If the --plot-c was set, read the corresponding modal quantity from the input file.
             # If not, use the q-point weights.
@@ -496,6 +496,7 @@ if __name__ == "__main__":
         data_mask = np.logical_and(
             data_mask, plot_c > 0.0
             )
+    print(data_mask.sum())
 
     num_mask_2 = len(data_mask) - sum(data_mask)
 

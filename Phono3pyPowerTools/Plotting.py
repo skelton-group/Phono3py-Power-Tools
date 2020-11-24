@@ -1,4 +1,4 @@
-# Phono3pyPowerTools/Matplotlib.py
+# Phono3pyPowerTools/Plotting.py
 
 
 # ----------------
