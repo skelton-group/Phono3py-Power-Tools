@@ -120,6 +120,21 @@ Command-line script for visualising the data from Phono3py `kappa-m*.hdf5` files
 Documentation including a tutorial can be found [here](./Docs/phono3py-mode-plot.md).
 
 
+## Miscellaneous utilities
+
+### vasp-get-force-drift
+
+Command-line script for extracting and visualising the force drift reported in sets of VASP `OUTCAR` files.
+This can be used to quickly assess the numerical quality of a set of single-point force calculations for a VASP + Phono(3)py calculation, and to identify calculations that need attention.
+Documentation to follow.
+
+### phono3py-force-norms
+
+Command-line script for visualising the norms of the atomic forces sets in Phonopy `FORCE_SETS` and Phono3py `FORCES_FC3` files.
+This can be used in conjunction with `vasp-get-force-drift` (or a similar tool) to compare the numerical precision of the calculated forces to the changes in forces in the displaced structures.
+Documentation to follow.
+
+
 ## Contributions, bug reports and feature requests
 
 We are happy to accept contributions.
