@@ -50,9 +50,10 @@ if __name__ == "__main__":
     if args.SortInputFiles:
         input_files = sorted(args.InputFiles)
     
+    disp_nums = []
     drift_sets = []
     
-    for input_file in input_files:
+    for i, input_file in enumerate(input_files):
         print("Reading: {0}".format(input_file))
         
         drift_set = None
@@ -75,8 +76,9 @@ if __name__ == "__main__":
   
         if drift_set is None:
             print("  -> WARNING: No drift values found for this displacement - please check.")
-      
-        drift_sets.append(drift_set)
+        else:
+            disp_nums.append(i + 1)
+            drift_sets.append(drift_set)
     
     print("")
     
@@ -85,12 +87,12 @@ if __name__ == "__main__":
     if len(drift_sets) == 0:
         raise Exception("Error: No drift values read from input files.")
 
-    # Process.
+    # Process
 
-    disp_nums = np.arange(
-        1, len(drift_sets) + 1
+    disp_nums = np.array(
+        disp_nums, dtype = np.int
         )
-    
+
     drift_norms = np.linalg.norm(
         drift_sets, axis = -1
         )
@@ -108,7 +110,6 @@ if __name__ == "__main__":
     print("Max. Drift: {0:.3e}".format(drift_norms.max()))
     print("Avg. Drift: {0:.3e}".format(drift_ave))
     print("Std. Drift: {0:.3e}".format(drift_std))
-    print("")
     
     # Write drift values to file.
     
@@ -143,10 +144,15 @@ if __name__ == "__main__":
         # https://stackoverflow.com/questions/35737116/runtimeerror-invalid-display-variable
 
         try:
-            plt.figure(figsize = (17.2 / 2.54, 7.0 / 2.54))
+            plt.figure(
+                figsize = (17.2 / 2.54, 7.0 / 2.54)
+                )
         except RuntimeError:
             plt.switch_backend('agg')
-            plt.figure(figsize = (17.2 / 2.54, 7.0 / 2.54))
+
+            plt.figure(
+                figsize = (17.2 / 2.54, 7.0 / 2.54)
+                )
         
         plt.scatter(
             disp_nums, drift_norms,

@@ -32,13 +32,13 @@ ZeroTolerance = 1.0e-5
 # FORCES_FC3 Parser
 # -----------------
 
-def IsFORCES_FC3(file_path):
+def IsForcesFC3(file_path):
     """ Peeks at file_path and returns True if it appears to be a Phono3py FORCES_FC3 file. """
     
     with open(file_path, 'r') as input_reader:
         return next(input_reader).strip() == "# File: 1"
 
-def ReadFORCES_FC3(file_path):
+def ReadForcesFC3(file_path):
     """
     Reads sets of forces from a Phono3py FORCES_FC3 file.
     

@@ -20,7 +20,7 @@ import numpy as np
 # -----------------
 
 
-def IsFORCE_SETS(file_path):
+def IsForceSets(file_path):
     """ Peeks at file_path and returns True if it appears to be a Phonopy FORCE_SETS file. """
     
     with open(file_path, 'r') as input_reader:
@@ -30,7 +30,7 @@ def IsFORCE_SETS(file_path):
         
         return line_1.isdigit() and line_2.isdigit() and line_3 == ""
 
-def ReadFORCE_SETS(file_path):
+def ReadForceSets(file_path):
     """
     Reads sets of forces from a Phonopy FORCE_SETS file.
     

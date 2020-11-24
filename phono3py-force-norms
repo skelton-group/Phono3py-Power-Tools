@@ -14,8 +14,8 @@ import matplotlib.pyplot as plt
 
 from argparse import ArgumentParser
 
-from Phono3pyPowerTools.PhonopyIO import IsFORCE_SETS, ReadFORCE_SETS
-from Phono3pyPowerTools.Phono3pyIO import IsFORCES_FC3, ReadFORCES_FC3
+from Phono3pyPowerTools.PhonopyIO import IsForceSets, ReadForceSets
+from Phono3pyPowerTools.Phono3pyIO import IsForcesFC3, ReadForcesFC3
 from Phono3pyPowerTools.Plotting import InitialiseMatplotlib
 from Phono3pyPowerTools.Utilities import OpenForCSVWriter
 
@@ -43,10 +43,10 @@ if __name__ == "__main__":
     
     force_sets = None
     
-    if IsFORCE_SETS(args.InputFile):
-        force_sets = ReadFORCE_SETS(args.InputFile)
-    elif IsFORCES_FC3(args.InputFile):
-        force_sets = ReadFORCES_FC3(args.InputFile)
+    if IsForceSets(args.InputFile):
+        force_sets = ReadForceSets(args.InputFile)
+    elif IsForcesFC3(args.InputFile):
+        force_sets = ReadForcesFC3(args.InputFile)
     else:
         raise Exception("Error: Unable to determine type of input file.")
     
@@ -113,12 +113,20 @@ if __name__ == "__main__":
     # https://stackoverflow.com/questions/35737116/runtimeerror-invalid-display-variable
 
     try:
-        plt.figure(figsize = (8.6 / 2.54, 7.0 / 2.54))
+        plt.figure(
+            figsize = (8.6 / 2.54, 7.0 / 2.54)
+            )
     except RuntimeError:
         plt.switch_backend('agg')
-        plt.figure(figsize = (8.6 / 2.54, 7.0 / 2.54))
+        
+        plt.figure(
+            figsize = (8.6 / 2.54, 7.0 / 2.54)
+            )
     
-    force_norms_plot = [plot_f_min] + [norm for norm in force_norms_sorted] + [plot_f_max]
+    force_norms_plot = [plot_f_min]
+    force_norms_plot += [norm for norm in force_norms_sorted]
+    force_norms_plot += [plot_f_max]
+    
     pc_forces_plot = [0.0] + [pc for pc in pc_forces] + [100.0]
     
     plt.plot(
@@ -159,12 +167,22 @@ if __name__ == "__main__":
     # Plot 2: Scatter plot of force norms.
 
     try:
-        plt.figure(figsize = (17.2 / 2.54, 7.0 / 2.54))
+        plt.figure(
+            figsize = (17.2 / 2.54, 7.0 / 2.54)
+            )
+    
     except RuntimeError:
         plt.switch_backend('agg')
-        plt.figure(figsize = (17.2 / 2.54, 7.0 / 2.54))
+        
+        plt.figure(
+            figsize = (17.2 / 2.54, 7.0 / 2.54)
+            )
     
-    scatter_x = np.repeat(disp_nums, num_atoms_sc).reshape((num_configs, num_atoms_sc))
+    scatter_x = np.repeat(disp_nums, num_atoms_sc)
+
+    scatter_x = scatter_x.reshape(
+        (num_configs, num_atoms_sc)
+        )
     
     plt.scatter(
         scatter_x, force_norm_sets,
