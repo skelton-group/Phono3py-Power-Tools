@@ -94,10 +94,6 @@ if __name__ == "__main__":
     norm_abs_drifts = np.linalg.norm(
         drift_sets, axis = -1
         )
-    
-    max_abs_drifts = np.max(
-        np.abs(drift_sets), axis = -1
-        )
 
     # Analyse.
     
@@ -153,7 +149,7 @@ if __name__ == "__main__":
             plt.figure(figsize = (17.2 / 2.54, 7.0 / 2.54))
         
         plt.scatter(
-            disp_nums, max_abs_drifts,
+            disp_nums, norm_abs_drifts,
             marker = 'o', s = 16.0, facecolor = 'none', edgecolor = 'r'
             )
         
