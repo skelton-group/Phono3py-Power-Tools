@@ -175,6 +175,8 @@ class Phono3pyKappaHDF5(object):
         if len(t_index) == 0:
             raise Exception("Error: temp = {0} K not found in 'temperature' array.".format(temp))
 
+        (t_index, ), = t_index
+
         return t_index
 
     # ----------

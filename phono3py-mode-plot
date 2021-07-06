@@ -496,7 +496,6 @@ if __name__ == "__main__":
         data_mask = np.logical_and(
             data_mask, plot_c > 0.0
             )
-    print(data_mask.sum())
 
     num_mask_2 = len(data_mask) - sum(data_mask)
 

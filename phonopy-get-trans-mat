@@ -109,7 +109,7 @@ if __name__ == "__main__":
     res = np.abs(
         np.rint(m_p_inv) - m_p_inv
         )
-
+    
     if (res >= _ZeroTolerance).any():
         raise Exception("Error: Inverse transformation M_p^-1 is not integer - please check input cells.")
 

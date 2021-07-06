@@ -105,6 +105,12 @@ if __name__ == "__main__":
         help = "Transformation matrix to a primitive cell"
         )
     
+    parser.add_argument(
+        "--qpoints",
+        dest = "WriteQPOINTS", action = 'store_true',
+        help = "Write commensurate points to a Phonopy QPOINTS file"
+        )
+    
     args = parser.parse_args()
     
     # Parse primitive and supercell matrices.
@@ -127,12 +133,14 @@ if __name__ == "__main__":
         primitive_matrix = primitive_matrix
         )
     
-    # Construct a DynmatToForceConstants object.
+    # Construct a DynmatToForceConstants object and get commensurate points.
     
     dynmat_to_fc = DynmatToForceConstants(
         phonon.get_primitive(),
         phonon.get_supercell()
         )
+    
+    comm_pts = dynmat_to_fc.commensurate_points
     
     # Print input parameters and list commensurate points.
     
@@ -159,5 +167,18 @@ if __name__ == "__main__":
     print("Commensurate Points")
     print("-------------------")
     
-    for i, (q_x, q_y, q_z) in enumerate(dynmat_to_fc.commensurate_points):
+    for i, (q_x, q_y, q_z) in enumerate(comm_pts):
         print("{0: >4} : {1: >6.3f} {2: >6.3f} {3: >6.3f}".format(i + 1, q_x, q_y, q_z))
+    
+    # If requested, write commensurate points to a Phonopy QPOINTS file.
+    
+    if args.WriteQPOINTS:
+        with open(r"QPOINTS", 'w') as output_writer:
+            output_writer.write(
+                "{0}\n".format(len(comm_pts))
+                )
+            
+            for q_x, q_y, q_z in comm_pts:
+                output_writer.write(
+                    "{0: >18.15f}  {1: >18.15f}  {2: >18.15f}\n".format(q_x, q_y, q_z)
+                    )
