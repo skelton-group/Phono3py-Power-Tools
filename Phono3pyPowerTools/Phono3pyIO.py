@@ -201,7 +201,16 @@ class Phono3pyKappaHDF5(object):
     def IsLBTE(self):
         """ Returns True if the encapsuated dataset is an LBTE calculation. """
 
-        return 'kappa_RTA' in self._GetDataset().keys()
+        if self.IsWigner:
+            return 'kappa_P_exact' in self._GetDataset().keys() and 'kappa_TOT_exact' in self._GetDataset().keys()
+        else:
+            return 'kappa_RTA' in self._GetDataset().keys()
+    
+    @property
+    def IsWigner(self):
+        """ Returns True if the encapsulated dataset is a calculation with the Wigner correction applied. """
+        
+        return 'kappa_C' in self._GetDataset().keys()
 
     # ------------
     # Get* Methods
@@ -212,59 +221,72 @@ class Phono3pyKappaHDF5(object):
 
         return self._GetDataset()['temperature'][:]
 
-    def GetKappa(self, lbte_rta = False):
+    def GetKappa(self, lbte_rta = False, wigner_mode = 'k_tot'):
         """
         Retrieve kappa (shape: n_tmps, 6)
 
         Keyword args:
           lbte_rta -- if the dataset is an LBTE calculation, return the RTA data (default: False)
+          wigner_mode -- if the dataset is a calculation with the Wigner correction applied, return the "populations" ('k_p'), "coherences" ('k_c') or total thermal conductivity ('k_tot').
         """
-
-        if self.IsLBTE and lbte_rta:
-            return self._GetDataset()['kappa_RTA'][:]
+        
+        ret_lbte = self.IsLBTE and not lbte_rta
+        
+        dataset_k = None
+        
+        if self.IsWigner:
+            if wigner_mode == 'k_p':
+                dataset_k = 'kappa_P_exact' if ret_lbte else 'kappa_P_RTA'
+            elif wigner_mode == 'k_c':
+                dataset_k = 'kappa_C'
+            elif wigner_mode == 'k_tot':
+                dataset_k = 'kappa_TOT_exact' if ret_lbte else 'kappa_TOT_RTA'
+            else:
+                raise Exception("Error: wigner_mode must be one of 'k_p', 'k_c' or 'k_tot'.")
         else:
-            return self._GetDataset()['kappa'][:]
+            dataset_k = 'kappa_RTA' if self.IsLBTE and not ret_lbte else 'kappa'
 
-    def GetKappaXX(self, lbte_rta = False):
+        return self._GetDataset()[dataset_k][:]
+
+    def GetKappaXX(self, **kwargs):
         """
         Retrieve k_xx (shape: n_tmps).
 
-        Keyword args:
-          lbte_rta -- if the dataset is an LBTE calculation, return the RTA data (default: False)
+        Notes:
+            Keyword arguments are passed to GetKappa().
         """
 
-        return self.GetKappa(lbte_rta = lbte_rta)[:, 0]
+        return self.GetKappa(**kwargs)[:, 0]
 
-    def GetKappaYY(self, lbte_rta = False):
+    def GetKappaYY(self, **kwargs):
         """
         Retrieve k_yy (shape: n_tmps).
 
-        Keyword args:
-          lbte_rta -- if the dataset is an LBTE calculation, return the RTA data (default: False)
+        Notes:
+            Keyword arguments are passed to GetKappa().
         """
 
-        return self.GetKappa(lbte_rta = lbte_rta)[:, 1]
+        return self.GetKappa(**kwargs)[:, 1]
 
-    def GetKappaZZ(self, lbte_rta = False):
+    def GetKappaZZ(self, **kwargs):
         """
         Retrieve k_zz (shape: n_tmps).
 
-        Keyword args:
-          lbte_rta -- if the dataset is an LBTE calculation, return the RTA data (default: False)
+        Notes:
+            Keyword arguments are passed to GetKappa().
         """
 
-        return self.GetKappa(lbte_rta = lbte_rta)[:, 2]
+        return self.GetKappa(**kwargs)[:, 2]
 
-    def GetKappaAve(self, lbte_rta = False):
+    def GetKappaAve(self, **kwargs):
         """
         Retrieve k_ave = (k_xx + k_yy + k_zz) / 3 (shape: n_tmps).
-
-        Keyword args:
-          lbte_rta -- if the dataset is an LBTE calculation, return the RTA data (default: False)
+        Notes:
+            Keyword arguments are passed to GetKappa().
         """
 
         return np.mean(
-            self.GetKappa(lbte_rta = lbte_rta)[:, :3], axis = -1
+            self.GetKappa(**kwargs)[:, :3], axis = -1
             )
 
     def GetQPointWeights(self):
@@ -286,12 +308,14 @@ class Phono3pyKappaHDF5(object):
           lbte_rta -- if the dataset is an LBTE calculation, return the RTA data (default: False)
         """
 
-        mode_kappa = None
+        dataset_k = None
 
-        if self.IsLBTE and lbte_rta:
-            mode_kappa = self._GetDataset()['mode_kappa_RTA']
+        if self.IsWigner:
+            dataset_k = 'mode_kappa_P_exact' if self.IsLBTE and not lbte_rta else 'mode_kappa_P_RTA'
         else:
-            mode_kappa = self._GetDataset()['mode_kappa']
+            dataset_k = 'mode_kappa_RTA' if self.IsLBTE and lbte_rta else 'mode_kappa'
+
+        mode_kappa = self._GetDataset()[dataset_k]
 
         t_index = self._GetTIndex(temp)
 

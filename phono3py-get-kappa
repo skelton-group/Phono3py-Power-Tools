@@ -50,22 +50,9 @@ if __name__ == "__main__":
     # Loop over input files.
 
     for input_file in args.InputFiles:
-        # Read input file.
+        # Load input file.
 
         kappa_hdf5 = Phono3pyKappaHDF5(input_file)
-
-        temps = kappa_hdf5.GetTemperature()
-
-        kappa_rta, kappa_lbte = None, None
-
-        if kappa_hdf5.IsLBTE:
-            kappa_rta = kappa_hdf5.GetKappa(
-                lbte_rta = True
-                )
-
-            kappa_lbte = kappa_hdf5.GetKappa()
-        else:
-            kappa_rta = kappa_hdf5.GetKappa()
 
         # Prepare output data.
 
@@ -76,21 +63,43 @@ if __name__ == "__main__":
             "k_iso [W/m.K]"
             ]
 
-        output_data = None
+        output_data = []
+        
+        temps = kappa_hdf5.GetTemperature()
 
-        if kappa_lbte is not None:
-            # LBTE calculation -> output LBTE + RTA as two separate sets of data.
-
-            output_data = [
-                (temps, kappa_rta , "RTA" ),
-                (temps, kappa_lbte, "LBTE")
-                ]
+        if kappa_hdf5.IsLBTE:
+            if kappa_hdf5.IsWigner:
+                # LBTE calculation with Wigner correction.
+                
+                output_data = [
+                    (temps, kappa_hdf5.GetKappa(wigner_mode = 'k_p'), "K_P_LBTE"),
+                    (temps, kappa_hdf5.GetKappa(lbte_rta = True, wigner_mode = 'k_p'), "K_P_RTA"),
+                    (temps, kappa_hdf5.GetKappa(wigner_mode = 'k_c'), "K_C"),
+                    (temps, kappa_hdf5.GetKappa(wigner_mode = 'k_tot'), "K_Tot_LBTE"),
+                    (temps, kappa_hdf5.GetKappa(lbte_rta = True, wigner_mode = 'k_tot'), "K_Tot_RTA"),
+                    ]
+            else:
+                # LBTE calculation.
+                
+                output_data = [
+                    (temps, kappa_hdf5.GetKappa(), "LBTE"),
+                    (temps, kappa_hdf5.GetKappa(lbte_rta = True), "RTA")
+                    ]
         else:
-            # RTA calculation -> output one set of data.
-
-            output_data = [
-                (temps, kappa_rta, None)
-                ]
+            # RTA calculation with Wigner correction.
+            
+            if kappa_hdf5.IsWigner:
+                output_data = [
+                    (temps, kappa_hdf5.GetKappa(wigner_mode = 'k_p'), "K_P"),
+                    (temps, kappa_hdf5.GetKappa(wigner_mode = 'k_c'), "K_C"),
+                    (temps, kappa_hdf5.GetKappa(wigner_mode = 'k_tot'), "K_Tot")
+                    ]
+            else:
+                # RTA calculation.
+                
+                output_data = [
+                    (temps, kappa_hdf5.GetKappa(), None)
+                    ]
 
         for temps_out, kappa_out, output_suffix in output_data:
             data_rows = []
